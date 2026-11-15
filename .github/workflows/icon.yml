@@ -30,7 +30,7 @@ concurrency:
 
 jobs:
   icon:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write   # push the commit (manual run only)
       actions: write    # start CI for that commit (manual run only)
