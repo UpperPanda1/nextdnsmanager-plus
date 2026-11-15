@@ -1,0 +1,90 @@
+# Continuous integration: runs on every push and pull request. A red ✗ on GitHub means something below failed;
+# open the run and the failing step's log says what. Nothing here publishes anything.
+#
+#   1. android: unit tests, Android lint (warnings fail the build, app/lint.xml), debug + release build;
+#      the APKs are attached to the run (Actions → the run → Artifacts → apks-<commit>).
+#   2. pages:   the page checks (tools/page-checks): the Settings and About pages and the injected scripts,
+#      clicked through in Chromium with stand-in bridges.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the older, still-running check.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      # The same command a developer runs locally (CLAUDE.md §4). The Android SDK is pre-installed on GitHub's runners.
+      - name: Test, lint and build
+        run: ./gradlew --no-daemon test lint assembleDebug assembleRelease
+
+      - name: Report release APK size
+        run: |
+          APK=app/build/outputs/apk/release/app-release-unsigned.apk
+          echo "Release APK size: $(stat -c %s "$APK") bytes" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test and lint reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports-${{ github.sha }}
+          path: |
+            app/build/reports/
+            app/build/test-results/
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: apks-${{ github.sha }}
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+
+  pages:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/page-checks
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install Playwright and Chromium
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+
+      - name: Page checks
+        run: npm run check
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: page-screenshots-${{ github.sha }}
+          path: tools/page-checks/screenshots/

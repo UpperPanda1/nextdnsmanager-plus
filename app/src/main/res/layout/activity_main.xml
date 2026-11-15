@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The app's one screen.
+      screen        = everything; ui/LockScreen puts its cover on top of it while the app is locked
+      mainRoot      = top bar above the pages
+      tabContainer  = one WebView per loaded account, added at runtime by web/TabManager, plus the
+                      "Unloaded" / "Tap to retry" screens (MainActivity) and the loading bar on top.
+                      ui/FindBar adds itself under tabContainer, inside mainRoot.
+    fitsSystemWindows is for Android 10; on Android 11+ ThemeManager.fitContent pads mainRoot itself,
+    so the top strip can be used while the status bar is hidden.
+-->
+<!-- tools:ignore: lint sees a frame with one child and calls it useless, but MainActivity adds the
+     lock cover (ui/LockScreen) as a second child at runtime, on top of everything. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/screen"
+    tools:ignore="MergeRootFrame"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/mainRoot"
+        tools:ignore="UselessParent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true"
+        android:orientation="vertical">
+
+        <include layout="@layout/top_bar" />
+
+        <RelativeLayout
+            android:id="@+id/tabContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:indeterminate="true"
+                android:visibility="gone" />
+        </RelativeLayout>
+    </LinearLayout>
+</FrameLayout>

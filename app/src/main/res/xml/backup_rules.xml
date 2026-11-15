@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backup rules for Android 10–11, which use this older format. Same rule as data_extraction_rules.xml:
+    settings and the account list are backed up, WebView data (logins, site storage, cache) is not.
+    Docs: https://developer.android.com/identity/data/autobackup#include-exclude-android-11
+-->
+<full-backup-content>
+    <exclude domain="root" path="app_webview/" />
+</full-backup-content>

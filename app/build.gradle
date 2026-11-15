@@ -1,0 +1,127 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Force Unix line endings (LF) for files generated during the build, so builds are the same on every computer.
+System.setProperty("line.separator", "\n")
+
+android {
+    // compileSdk = which Android API version the code is compiled against (lets us *use* newer APIs,
+    // behind version checks). It does not change how the app behaves; targetSdk below does.
+    compileSdk = 36
+    namespace = 'org.dnsmanager.app'
+    buildFeatures {
+        buildConfig = true
+    }
+    defaultConfig {
+        // applicationId = the app's permanent identity on a phone and in app stores. Android treats a
+        // different applicationId as a completely different app, so decide it before the first public
+        // release and never change it afterwards (users would lose their data and updates).
+        applicationId = "org.rafee_m.nextdnsmanager"
+        // Android 10. Private DNS (what the status icon reports) exists since Android 9, the system
+        // unlock prompt used by the app lock since Android 9/10, and current WebView versions (needed
+        // for several accounts) are only published for Android 10 and newer. See PROJECT.md §8.
+        minSdk = 29
+        // targetSdk 35: raising it changes Android behaviour and needs a test on a phone first.
+        targetSdk = 35
+        versionCode = 1
+        versionName = "0.1.0"
+        manifestPlaceholders = [appName: "@string/app_name"]
+        // Only package the translations the app has (en = default "values/"). Add a locale here when a
+        // values-xx folder is added.
+        resourceConfigurations += ['en']
+    }
+
+    signingConfigs {
+        // Debug builds are signed with this fixed, committed key (password "android", like Android's
+        // default). Without it every CI machine creates a random debug key, and Android refuses to
+        // install a debug APK over one signed with a different key. Debug keys are not secret.
+        debug {
+            storeFile = file('debug.keystore')
+            storePassword = 'android'
+            keyAlias = 'androiddebugkey'
+            keyPassword = 'android'
+        }
+        release {
+            // Optional local signing for your own testing: put signing.storeFile / storePassword /
+            // keyAlias / keyPassword into local.properties (never committed).
+            def localProperties = new Properties()
+            def localPropertiesFile = rootProject.file('local.properties')
+            if (localPropertiesFile.exists()) {
+                localPropertiesFile.withInputStream { localProperties.load(it) }
+            }
+            def storeFileProp = localProperties.getProperty('signing.storeFile')
+            if (storeFileProp != null) {
+                storeFile = rootProject.file(storeFileProp)
+                storePassword = localProperties.getProperty('signing.storePassword')
+                keyAlias = localProperties.getProperty('signing.keyAlias')
+                keyPassword = localProperties.getProperty('signing.keyPassword')
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable = true
+            // ".debug" lets a test build sit next to the released app on the same phone.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            manifestPlaceholders = [appName: "NextDNS Manager+ (Debug)"]
+        }
+        release {
+            manifestPlaceholders = [appName: "@string/app_name"]
+            debuggable = false
+            // R8: removes unused code and shortens class names.
+            minifyEnabled = true
+            // Removes resources (images, layouts, strings) that no code references. Needs minifyEnabled.
+            shrinkResources = true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            def releaseSigning = signingConfigs.findByName('release')
+            if (releaseSigning != null && releaseSigning.storeFile != null) {
+                signingConfig = releaseSigning
+            }
+        }
+    }
+
+    dependenciesInfo {
+        // No dependency list inside the APK: keeps builds byte-for-byte reproducible (F-Droid).
+        includeInApk = false
+        includeInBundle = false
+    }
+
+    packaging {
+        resources {
+            excludes += '/assets/dexopt/baseline.prof'
+            excludes += '/assets/dexopt/baseline.profm'
+            // Kotlin metadata pulled in by androidx.webkit's Kotlin dependency; only Kotlin reflection
+            // reads it, which this Java-only app never uses.
+            excludes += '/kotlin/**'
+            excludes += '/META-INF/*.kotlin_module'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    lint {
+        // A lint warning fails the build, so nothing slips in unnoticed. The few accepted ones are
+        // listed (with the reason) in lint.xml.
+        warningsAsErrors = true
+        abortOnError = true
+        lintConfig = file('lint.xml')
+    }
+}
+
+dependencies {
+    // AndroidX WebKit: newer WebView features (profiles = one container per account, document-start
+    // scripts, cache limits) with feature checks. The app's only library.
+    implementation 'androidx.webkit:webkit:1.17.1'
+
+    // Unit tests run on the computer (JVM), not the phone, and are not packaged into the APK.
+    testImplementation 'junit:junit:4.13.2'
+    // In JVM tests Android's own classes are empty stubs, including org.json. This real copy of the
+    // same library lets the tests read and write JSON. Test-only: not in the APK.
+    testImplementation 'org.json:json:20260814'
+}

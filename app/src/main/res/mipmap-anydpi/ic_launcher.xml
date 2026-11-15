@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The launcher icon: an "adaptive icon" (Android 8+), drawn from two vector layers, so one file is sharp on
+    every screen and the phone's launcher applies its own shape (circle, squircle…).
+      background = the accent colour (drawable/ic_launcher_background.xml)
+      foreground = a white shield with a "+" cut out (drawable/ic_launcher_foreground.xml)
+      monochrome = the same shield, which Android 13+ tints for "themed icons"
+    The About screen shows this same icon (ui/AboutWindow draws it). minSdk 29 means no PNG versions are needed.
+    Docs: https://developer.android.com/develop/ui/views/launch/icon_design_adaptive
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>

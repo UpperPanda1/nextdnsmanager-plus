@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backup rules for Android 12+. Android can copy app data to the user's cloud backup and to a new
+    phone. We keep the settings and the account list (shared preferences) but EXCLUDE app_webview/ =
+    WebView data: the login cookies of every account, site storage and cache. A login copied somewhere
+    else is a security risk; signing in again on a new phone is expected.
+    Docs: https://developer.android.com/identity/data/autobackup#include-exclude-android-12
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="app_webview/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="app_webview/" />
+    </device-transfer>
+</data-extraction-rules>

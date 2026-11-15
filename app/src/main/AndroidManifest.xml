@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Loading the NextDNS website and the connection test. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Reading whether Private DNS is active (status icon, status/ConnectionStatus). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- The system unlock prompt of the app lock (lock/AppLock). Granted automatically. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- The same list is shown to the user in Settings → Permissions (assets/settings.html): keep both
+         in step (the page check tools/page-checks/settings-permissions.mjs compares them). -->
+
+    <application
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="${appName}"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.DeviceDefault.DayNight">
+
+        <!-- configChanges: the screen is NOT rebuilt on rotation, dark-mode switch or keyboard changes,
+             so the open pages stay as they are (MainActivity.onConfigurationChanged handles the rest). -->
+        <activity
+            android:name="org.dnsmanager.app.MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode|keyboard|keyboardHidden|navigation"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustResize"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- WebView's own usage statistics are switched off. -->
+        <meta-data android:name="android.webkit.WebView.MetricsOptOut"
+            android:value="true" />
+    </application>
+
+</manifest>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Native top bar above the page (PROJECT.md §5.1):
+      left  = account chip: (number) Name ▾ → the account menu (ui/SwitcherPopup): accounts, then the
+              icon row Desktop site / Reload / Hide status bar / Clear cache, then "Manage accounts"
+      right = status icon   → is this phone using NextDNS? (status/ConnectionStatus); tap = explanation
+              home icon     → the dashboard's start page
+              three dots    → Find in page, Ping, Private DNS settings, Settings (ui/OverflowMenu)
+    There is no Back button on purpose: Android's Back goes back inside the page.
+    MainActivity.setupTopBar() connects the buttons; ui/NativeTheme colours them (the colours below are
+    only what shows before that).
+-->
+<!-- tools:ignore="Overdraw": lint checks this file alone and thinks it is a whole screen. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/topBar"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:background="@color/top_bar_background"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="8dp"
+    android:paddingEnd="4dp"
+    tools:ignore="Overdraw">
+
+    <!-- The chip is 40dp tall inside the 48dp bar; the buttons keep Android's 48 x 48dp touch size. -->
+    <LinearLayout
+        android:id="@+id/accountChip"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:background="@drawable/chip_background"
+        android:clickable="true"
+        android:contentDescription="@string/switch_account"
+        android:focusable="true"
+        android:foreground="?android:attr/selectableItemBackground"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="6dp"
+        android:paddingEnd="12dp">
+
+        <!-- Round badge with the account's number; drawn in code by ui/AccountBadge. -->
+        <TextView
+            android:id="@+id/accountBadge"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:importantForAccessibility="no" />
+
+        <!-- maxWidth 120dp: bar padding 12 + chip (6 + 28 + 10 + name + 6 + arrow ~16 + 12) + three 48dp
+             buttons = 354dp with a 120dp name, so everything fits a 360dp-wide phone. Longer names end in "…". -->
+        <TextView
+            android:id="@+id/accountName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:ellipsize="end"
+            android:importantForAccessibility="no"
+            android:maxWidth="120dp"
+            android:singleLine="true"
+            android:textColor="@color/on_surface"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/accountArrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:importantForAccessibility="no"
+            android:text="@string/dropdown_arrow"
+            android:textColor="@color/on_surface_variant"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <ImageButton
+        android:id="@+id/statusButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/status_unknown"
+        android:src="@drawable/ic_status_warn" />
+
+    <ImageButton
+        android:id="@+id/homeButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/home"
+        android:src="@drawable/ic_home" />
+
+    <ImageButton
+        android:id="@+id/menuButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/more_options"
+        android:src="@drawable/ic_more_vert" />
+</LinearLayout>

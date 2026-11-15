@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Lint settings. app/build.gradle turns every lint warning into an error, so this file is the one
+    place where a warning is accepted on purpose. Each entry needs its reason.
+-->
+<lint>
+    <!-- targetSdk stays 35 until the app was tested on a phone with a newer target (PROJECT.md §8). -->
+    <issue id="OldTargetApi" severity="ignore" />
+    <!-- "A newer version of X exists": checked by hand when updating, not on every build (the answer
+         changes over time, which would break builds of unchanged code). -->
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
+</lint>

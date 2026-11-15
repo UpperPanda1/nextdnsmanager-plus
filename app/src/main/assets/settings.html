@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <!--
+        The app's Settings screen (PROJECT.md §5.5), shown by ui/SettingsWindow in a full-screen window.
+        Material 3 look in plain CSS (no UI library). Everything on this screen is in this one file:
+        styles first, then the rows (HTML), then the behaviour (script at the end).
+
+        Colours are CSS variables named after Material 3 colour roles (--md-surface, --md-primary, ...).
+        The values below are only used when the page is opened outside the app (a browser, the page
+        checks); inside the app, theme/ThemeBridge writes the real ones at the end of <head>
+        (theme/Themes.java holds them: keep the two lists the same).
+
+        HOW TO CHANGE THINGS (more in PROJECT.md §7):
+          * a text         → edit it right here in the HTML
+          * a new switch   → copy a <div class="row"> with a switch, give the input a new id, add its
+                             value to getSettingsJson and a setter in ui/SettingsWindow.Bridge, wire
+                             it up under DOMContentLoaded at the bottom
+          * a new text page→ copy a <div id="...View"> block and a row that opens it
+        After any change run the page checks: tools/page-checks (README there).
+    -->
+    <style>
+        :root {
+            color-scheme: light;
+            --md-primary: #0056B3; --md-on-primary: #FFFFFF;
+            --md-secondary-container: #DCE8FA; --md-on-secondary-container: #0B2545;
+            --md-error: #B02A37;
+            --md-surface: #FFFFFF; --md-on-surface: #212529; --md-on-surface-variant: #495057;
+            --md-surface-container-low: #F8F9FA; --md-surface-container: #F1F3F5;
+            --md-surface-container-high: #E9ECEF; --md-surface-container-highest: #DEE2E6;
+            --md-outline: #6C757D; --md-outline-variant: #CED4DA;
+            --md-inverse-surface: #212529; --md-inverse-on-surface: #F1F3F5; --md-inverse-primary: #6EA8FE;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                color-scheme: dark;
+                --md-primary: #6EA8FE; --md-on-primary: #052C65;
+                --md-secondary-container: #1F3A5F; --md-on-secondary-container: #D6E4FF;
+                --md-error: #EA868F;
+                --md-surface: #212529; --md-on-surface: #DEE2E6; --md-on-surface-variant: #ADB5BD;
+                --md-surface-container-low: #262B2F; --md-surface-container: #2B3035;
+                --md-surface-container-high: #343A40; --md-surface-container-highest: #3D444B;
+                --md-outline: #8A939B; --md-outline-variant: #495057;
+                --md-inverse-surface: #DEE2E6; --md-inverse-on-surface: #212529; --md-inverse-primary: #0056B3;
+            }
+        }
+
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html { background: var(--md-surface); }
+        body {
+            font-family: "Google Sans Text", "Google Sans", Roboto, system-ui, sans-serif;
+            background: var(--md-surface);
+            color: var(--md-on-surface);
+            font-size: 16px;
+            line-height: 1.4;
+            min-height: 100vh;
+        }
+        button, input, textarea { font: inherit; color: inherit; }
+        svg { width: 24px; height: 24px; fill: currentColor; flex-shrink: 0; }
+
+        /* ---------- Top app bar ---------- */
+        .appbar {
+            position: sticky; top: 0; z-index: 5;
+            display: flex; align-items: center; gap: 4px;
+            height: 64px; padding: 0 4px;
+            background: var(--md-surface);
+        }
+        .appbar.scrolled { background: var(--md-surface-container); }
+        .appbar h1 { font-size: 22px; font-weight: 400; margin-left: 4px; }
+
+        main { max-width: 640px; margin: 0 auto; padding: 8px 16px 48px; }
+        section { margin-top: 20px; scroll-margin-top: 72px; }
+        .section-label {
+            font-size: 14px; font-weight: 500; letter-spacing: .1px;
+            color: var(--md-primary); margin: 0 16px 8px;
+        }
+
+        /* ---------- List groups (Android 16 style: rounded group, small gaps) ---------- */
+        .group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
+        .row {
+            position: relative; overflow: hidden;
+            display: flex; align-items: center; gap: 16px;
+            min-height: 64px; padding: 12px 16px;
+            background: var(--md-surface-container);
+            border-radius: 4px; border: 0; width: 100%; text-align: start;
+        }
+        .group > .row:first-child { border-top-left-radius: 24px; border-top-right-radius: 24px; }
+        .group > .row:last-child { border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; }
+        .row .text { flex: 1; min-width: 0; }
+        .title { font-size: 16px; color: var(--md-on-surface); overflow-wrap: anywhere; }
+        .sub { font-size: 14px; color: var(--md-on-surface-variant); margin-top: 2px; }
+        .row.dim .title { color: var(--md-on-surface-variant); }
+        /* Touch feedback ("state layer"): a see-through layer in the text colour. */
+        .clickable, .icon-btn, .text-btn, .tonal-btn, .tile { cursor: pointer; }
+        .clickable::after, .icon-btn::after, .text-btn::after, .tonal-btn::after {
+            content: ""; position: absolute; inset: 0; border-radius: inherit;
+            background: currentColor; opacity: 0; transition: opacity .15s; pointer-events: none;
+        }
+        .clickable:active::after, .icon-btn:active::after, .text-btn:active::after,
+        .tonal-btn:active::after { opacity: .1; }
+        :focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+
+        .icon-btn {
+            position: relative; display: inline-flex; align-items: center; justify-content: center;
+            width: 48px; height: 48px; border-radius: 50%; border: 0; background: transparent;
+            color: var(--md-on-surface-variant); flex-shrink: 0;
+        }
+        .icon-btn.tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); width: 40px; height: 40px; }
+        /* Material 3: a 40px tonal button still gets a 48px touch area (an invisible ring around it). */
+        .icon-btn.tonal::before { content: ""; position: absolute; inset: -4px; }
+        .icon-btn[disabled] { opacity: .38; pointer-events: none; }
+        .text-btn, .tonal-btn {
+            position: relative; overflow: hidden; border: 0; border-radius: 20px;
+            height: 40px; padding: 0 16px; font-size: 14px; font-weight: 500; background: transparent;
+            color: var(--md-primary);
+        }
+        .tonal-btn { background: var(--md-secondary-container); color: var(--md-on-secondary-container); padding: 0 20px; }
+        .danger { color: var(--md-error) !important; }
+
+        /* Account badge: a filled circle with the account's number (the same idea as the native ui/AccountBadge). */
+        .badge, .avatar {
+            display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+            width: 40px; height: 40px; border-radius: 50%; font-weight: 700; font-size: 16px;
+        }
+        .badge { background: var(--md-primary); color: var(--md-on-primary); font-variant-numeric: tabular-nums; }
+        .badge svg { width: 56%; height: 56%; fill: #fff; }
+        .badge.small { width: 24px; height: 24px; font-size: 11px; }
+        .avatar { background: var(--md-secondary-container); color: var(--md-on-secondary-container); font-weight: 500; }
+        .chip {
+            display: inline-block; font-size: 12px; font-weight: 500; line-height: 20px;
+            padding: 0 8px; border-radius: 8px; margin-left: 6px; vertical-align: 1px;
+            background: var(--md-secondary-container); color: var(--md-on-secondary-container);
+        }
+        /* Account rows: the second line holds the "Open" chip under the name. */
+        .sub.meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+        .sub.meta .chip { margin-left: 0; vertical-align: 0; }
+        .row-actions { display: flex; align-items: center; flex-shrink: 0; }
+        .hint { font-size: 14px; color: var(--md-on-surface-variant); margin: 4px 16px 0; }
+        .hint + .hint { margin-top: 8px; }
+
+        /* ---------- Material 3 switch ---------- */
+        .switch { position: relative; display: inline-flex; flex-shrink: 0; }
+        .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
+        .track {
+            width: 52px; height: 32px; border-radius: 16px; display: flex; align-items: center;
+            background: var(--md-surface-container-highest); border: 2px solid var(--md-outline);
+            transition: background .2s, border-color .2s;
+        }
+        .thumb {
+            width: 16px; height: 16px; border-radius: 50%; margin-left: 6px;
+            background: var(--md-outline); transition: all .2s;
+        }
+        .switch input:checked + .track { background: var(--md-primary); border-color: var(--md-primary); }
+        .switch input:checked + .track .thumb { width: 24px; height: 24px; margin-left: 22px; background: var(--md-on-primary); }
+        .switch input:disabled + .track { opacity: .38; }
+        .switch input:focus-visible + .track { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+
+        /* ---------- Segmented buttons ("Accounts kept loaded") ---------- */
+        /* "Accounts kept loaded" picker: numbers 1–10 as Material 3 tiles; the chosen one is filled with the
+           primary colour (Material You) and turns fully round, M3's shape change for a selected item. */
+        .number-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .number-grid button {
+            position: relative; overflow: hidden; height: 56px; border: 0; border-radius: 16px;
+            background: var(--md-surface-container-highest); color: var(--md-on-surface);
+            font: inherit; font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums;
+        }
+        .number-grid button[aria-checked="true"] { background: var(--md-primary); color: var(--md-on-primary); border-radius: 28px; }
+
+        /* ---------- Text fields ---------- */
+        textarea, .field {
+            width: 100%; border: 1px solid var(--md-outline); border-radius: 12px;
+            background: transparent; color: var(--md-on-surface); padding: 12px 14px; font-size: 16px;
+        }
+        textarea { min-height: 88px; resize: none; line-height: 1.4; }
+        textarea:focus, .field:focus { outline: none; border: 2px solid var(--md-primary); padding: 11px 13px; }
+        .field-label { font-size: 14px; color: var(--md-on-surface-variant); }
+
+        /* ---------- Dialogs and bottom sheet ---------- */
+        .scrim {
+            position: fixed; inset: 0; z-index: 10; background: rgba(0, 0, 0, .32);
+            display: flex; align-items: center; justify-content: center; padding: 24px;
+            animation: fade .15s ease-out;
+        }
+        .scrim.sheet-scrim { align-items: flex-end; padding: 0; }
+        .dialog {
+            width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto;
+            background: var(--md-surface-container-high); border-radius: 28px; padding: 24px;
+            animation: pop .2s cubic-bezier(.2, 0, 0, 1);
+        }
+        .dialog h2 { font-size: 24px; font-weight: 400; margin-bottom: 16px; }
+        .dialog p { font-size: 14px; color: var(--md-on-surface-variant); margin-bottom: 16px; }
+        .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+        .sheet {
+            width: 100%; max-width: 640px; max-height: 85vh; overflow-y: auto;
+            background: var(--md-surface-container-low); border-radius: 28px 28px 0 0;
+            padding: 8px 0 24px; animation: rise .25s cubic-bezier(.2, 0, 0, 1);
+        }
+        .handle { width: 32px; height: 4px; border-radius: 2px; background: var(--md-on-surface-variant); opacity: .4; margin: 14px auto 12px; }
+        .sheet-head { display: flex; align-items: center; gap: 16px; padding: 4px 24px 12px; }
+        .sheet .item {
+            position: relative; overflow: hidden; display: flex; align-items: center; gap: 16px; width: 100%;
+            min-height: 56px; padding: 8px 24px; border: 0; background: transparent; text-align: start;
+            color: var(--md-on-surface);
+        }
+        .sheet .item svg { color: var(--md-on-surface-variant); }
+        .sheet .item.danger svg { color: var(--md-error); }
+        .sheet .item[disabled] { opacity: .38; pointer-events: none; }
+        .sheet hr { border: 0; height: 1px; background: var(--md-outline-variant); margin: 8px 24px; }
+
+        /* Radio list (Theme popup) */
+        .radio-row { display: flex; align-items: center; gap: 16px; min-height: 56px; width: 100%;
+            border: 0; background: transparent; text-align: start; position: relative; border-radius: 12px; padding: 0 8px; }
+        .radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--md-on-surface-variant);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .radio-row[aria-checked="true"] .radio { border-color: var(--md-primary); }
+        .radio-row[aria-checked="true"] .radio::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--md-primary); }
+
+        /* ---------- Sub-screens (Privacy, Permissions, Disclaimer): a full page inside Settings ---------- */
+        .appbar .chevron { margin-left: auto; }
+        .row .chevron { color: var(--md-on-surface-variant); }
+        .row > svg { color: var(--md-on-surface-variant); }
+        .hint.lead { margin: 0 16px 16px; }
+        /* Account rows: the handle is the only place a drag starts (the rest scrolls). */
+        .reorder-row { gap: 16px; padding-right: 4px; user-select: none; -webkit-user-select: none; }
+        .reorder-row .title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .reorder-row .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .drag-handle { touch-action: none; cursor: grab; color: var(--md-on-surface-variant); }
+        .sorting .reorder-row { transition: transform .15s cubic-bezier(.2, 0, 0, 1); }
+        .sorting .reorder-row.dragging {
+            transition: none; z-index: 2; position: relative; border-radius: 16px;
+            background: var(--md-surface-container-highest);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .3), 0 4px 8px 3px rgba(0, 0, 0, .15);
+        }
+        .sorting .drag-handle { cursor: grabbing; }
+        /* Text only screen readers hear (e.g. "Work: position 2 of 3" after a move). */
+        .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+        /* Snackbar */
+        #snackbar {
+            position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 20; max-width: 600px; margin: 0 auto;
+            display: none; align-items: center; gap: 8px; min-height: 48px; padding: 6px 8px 6px 16px;
+            border-radius: 8px; background: var(--md-inverse-surface); color: var(--md-inverse-on-surface); font-size: 14px;
+        }
+        #snackbar.show { display: flex; animation: rise .2s ease-out; }
+        #snackbar .text-btn { color: var(--md-inverse-primary); margin-left: auto; }
+
+        @keyframes fade { from { opacity: 0; } }
+        @keyframes pop { from { opacity: 0; transform: scale(.94); } }
+        @keyframes rise { from { transform: translateY(24px); opacity: 0; } }
+        @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+        /* ---------- Text pages (Privacy, Disclaimer) ---------- */
+        .prose { padding-top: 0; }
+        .prose p, .prose li { font-size: 15px; line-height: 1.5; color: var(--md-on-surface); }
+        .prose p { margin: 0 16px 14px; }
+        .prose h2 { font-size: 14px; font-weight: 500; color: var(--md-primary); margin: 22px 16px 8px; }
+        .prose ul { margin: 0 16px 14px 36px; }
+        .prose li { margin-bottom: 8px; }
+    </style>
+    <!-- The app's colours (theme/ThemeBridge); must stay last in <head> so they win over the defaults above. -->
+    <script>if (window.AndroidTheme) { document.write('<style id="app-theme">' + AndroidTheme.css() + '</style>'); }</script>
+</head>
+<body>
+    <!-- ======================= Main screen ======================= -->
+    <div id="mainView">
+    <header class="appbar">
+        <button type="button" class="icon-btn" onclick="closeSettings()" aria-label="Close settings">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <h1>Settings</h1>
+    </header>
+    <main>
+        <!-- ================= Accounts: the whole account manager in one list =================
+             Tap a row = open it · ⋮ = rename / sign out / remove · handle = drag to re-order ·
+             last row = add. Rules: account/AccountStore; calls: account/AccountsBridge. -->
+        <section id="accounts" aria-labelledby="accountsLabel">
+            <h2 class="section-label" id="accountsLabel">Accounts</h2>
+            <div class="group" id="accountList" role="list" aria-label="Accounts, in menu order"></div>
+            <div class="group">
+                <button type="button" class="row clickable" id="addAccountRow" onclick="openAddDialog()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    <div class="text"><div class="title">Add account</div>
+                        <div class="sub">Another <span class="svc">NextDNS</span> login, kept separate</div></div>
+                </button>
+            </div>
+            <p class="hint">Each account keeps its own login and site data, separate from all others. The number is its place in the account menu; drag the handle to change the order.</p>
+            <p class="hint" id="singleAccountHint" hidden>More than one account needs a newer “Android System WebView”. Update it from the Play Store.</p>
+            <div class="visually-hidden" id="accountStatus" aria-live="polite"></div>
+        </section>
+
+        <!-- ================= Appearance ================= -->
+        <section id="appearance" aria-labelledby="appearanceLabel">
+            <h2 class="section-label" id="appearanceLabel">Appearance</h2>
+            <div class="group">
+                <button type="button" class="row clickable" id="themeRow" onclick="openThemeDialog()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+                    <div class="text"><div class="title">Theme</div>
+                        <div class="sub" id="themeSub">Match system</div></div>
+                </button>
+            </div>
+            <p class="hint">The app and the <span class="svc">NextDNS</span> website switch together. A theme chosen inside the website's own account settings wins over this one.</p>
+        </section>
+
+        <!-- ================= Behaviour ================= -->
+        <section id="behaviour" aria-labelledby="behaviourLabel">
+            <h2 class="section-label" id="behaviourLabel">Behaviour</h2>
+            <div class="group">
+                <!-- web/PageZoom + assets/js/zoom_viewport.js. Off by default. -->
+                <div class="row">
+                    <div class="text"><div class="title" id="l_pz">Pinch to zoom</div>
+                        <div class="sub">Zoom the page with two fingers. Open pages reload once</div></div>
+                    <label class="switch"><input type="checkbox" role="switch" id="pinch_zoom_page" aria-labelledby="l_pz"><span class="track"><span class="thumb"></span></span></label>
+                </div>
+                <!-- web/TabManager + web/TabLru: how many accounts keep their page in memory. -->
+                <button type="button" class="row clickable" id="liveTabsRow" onclick="openLiveTabsDialog()">
+                    <div class="text"><div class="title">Accounts kept loaded</div>
+                        <div class="sub" id="liveTabsSub">3 accounts</div></div>
+                </button>
+            </div>
+            <p class="hint">A loaded account switches instantly but uses memory. Others load again when you pick them; you stay signed in either way.</p>
+        </section>
+
+        <!-- ================= Security ================= -->
+        <section id="security" aria-labelledby="securityLabel">
+            <h2 class="section-label" id="securityLabel">Security</h2>
+            <div class="group">
+                <!-- lock/AppLock. The switch only moves after the phone's unlock was confirmed (onAppLock). -->
+                <div class="row">
+                    <div class="text"><div class="title" id="l_al">App lock</div>
+                        <div class="sub">Ask for your fingerprint, face or screen lock when the app opens. Also hides the app in screenshots and recent apps</div></div>
+                    <label class="switch"><input type="checkbox" role="switch" id="app_lock" aria-labelledby="l_al"><span class="track"><span class="thumb"></span></span></label>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= Data ================= -->
+        <section id="data" aria-labelledby="dataLabel">
+            <h2 class="section-label" id="dataLabel">Data</h2>
+            <div class="group">
+                <!-- storage/StorageBridge → web/Profiles.clearAllCaches: every account, logins stay. -->
+                <button type="button" class="row clickable" id="clearCacheRow" onclick="confirmClearCache()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z"/></svg>
+                    <div class="text"><div class="title">Clear cache</div>
+                        <div class="sub" id="cacheSize">Measuring…</div></div>
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= About & legal ================= -->
+        <section id="about" aria-labelledby="aboutLabel">
+            <h2 class="section-label" id="aboutLabel">About &amp; legal</h2>
+            <div class="group">
+                <button type="button" class="row clickable" onclick="openAbout()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                    <div class="text"><div class="title">About <span id="aboutName">this app</span></div>
+                        <div class="sub" id="aboutSub">Version, source code, report an issue</div></div>
+                </button>
+                <button type="button" class="row clickable" onclick="openSubView('privacy')">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+                    <div class="text"><div class="title">Privacy</div>
+                        <div class="sub">What this app stores and sends</div></div>
+                    <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                </button>
+                <button type="button" class="row clickable" onclick="openLink('service_privacy')">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+                    <div class="text"><div class="title"><span class="svc">NextDNS</span> privacy policy</div>
+                        <div class="sub">Opens in your browser</div></div>
+                </button>
+                <button type="button" class="row clickable" onclick="openLink('service_terms')">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+                    <div class="text"><div class="title"><span class="svc">NextDNS</span> user agreement</div>
+                        <div class="sub">Opens in your browser</div></div>
+                </button>
+                <button type="button" class="row clickable" onclick="openSubView('permissions')">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.65 10A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+                    <div class="text"><div class="title">Permissions</div>
+                        <div class="sub">What the app may do on this phone, and why</div></div>
+                    <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                </button>
+                <button type="button" class="row clickable" onclick="openSubView('disclaimer')">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                    <div class="text"><div class="title">Disclaimer</div>
+                        <div class="sub">Not affiliated with <span class="svc">NextDNS</span></div></div>
+                    <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                </button>
+            </div>
+        </section>
+    </main>
+    </div>
+
+    <!-- ======================= Sub-screens (Back returns to the main screen) =======================
+         Each is <div id="NAMEView" hidden>, opened with openSubView('NAME'). To add one: copy a block,
+         give it a new id, add a row above that calls openSubView with the same name. -->
+    <div id="privacyView" hidden>
+        <header class="appbar">
+            <button type="button" class="icon-btn" onclick="closeSubView()" aria-label="Back to settings">
+                <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </button>
+            <h1>Privacy</h1>
+        </header>
+        <main class="prose">
+            <p>This app is a window onto the <span class="svc">NextDNS</span> website. It has no servers of its own and its developer receives nothing from it.</p>
+            <h2>What the app does not do</h2>
+            <ul>
+                <li>No analytics, no crash reporting, no advertising, no tracking of any kind.</li>
+                <li>It never reads or sends your <span class="svc">NextDNS</span> password, settings or logs anywhere. They go only between your phone and <span class="svc">NextDNS</span>, exactly as in a browser.</li>
+            </ul>
+            <h2>What is stored on this phone</h2>
+            <ul>
+                <li>Your settings in this app and the names of your accounts.</li>
+                <li>For each account, what the website itself stores, as a browser would: the login cookie, site data and a cache of the site's files. Each account's data is kept apart from the others. “Sign out” and “Remove” in Accounts delete it; “Clear cache” deletes only the cached files.</li>
+                <li>Android's backup includes this app's settings and account names, never logins or site data.</li>
+            </ul>
+            <h2>What is sent over the network</h2>
+            <ul>
+                <li>The pages you open on the <span class="svc">NextDNS</span> website.</li>
+                <li>While the app is open, one small request to the <span class="svc">NextDNS</span> test address, to show whether this phone uses <span class="svc">NextDNS</span> (the icon in the top bar). It carries no account information.</li>
+                <li>Links to other websites open in your browser, not in this app.</li>
+            </ul>
+            <p>How <span class="svc">NextDNS</span> handles your data is described in its own privacy policy (Settings → About &amp; legal).</p>
+        </main>
+    </div>
+
+    <div id="permissionsView" hidden>
+        <header class="appbar">
+            <button type="button" class="icon-btn" onclick="closeSubView()" aria-label="Back to settings">
+                <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </button>
+            <h1>Permissions</h1>
+        </header>
+        <main>
+            <p class="hint lead">Everything this app is allowed to do on your phone. Android grants all three by itself; none of them reaches your files, camera, microphone, location or contacts.</p>
+            <!-- One row per <uses-permission> in AndroidManifest.xml; data-permission = its name there.
+                 tools/page-checks/settings-permissions.mjs fails if the two lists differ. -->
+            <div class="group" id="permissionList">
+                <div class="row" data-permission="android.permission.INTERNET">
+                    <div class="text"><div class="title">Internet access</div>
+                        <div class="sub">Loads the <span class="svc">NextDNS</span> website and checks the connection status</div></div>
+                </div>
+                <div class="row" data-permission="android.permission.ACCESS_NETWORK_STATE">
+                    <div class="text"><div class="title">View network state</div>
+                        <div class="sub">Reads whether Private DNS is switched on, for the status icon in the top bar</div></div>
+                </div>
+                <div class="row" data-permission="android.permission.USE_BIOMETRIC">
+                    <div class="text"><div class="title">Use fingerprint or face unlock</div>
+                        <div class="sub">Shows Android's unlock sheet for App lock. The app never sees your fingerprint, face or PIN</div></div>
+                </div>
+            </div>
+            <p class="hint">A question about these? Open an issue on GitHub (About → Report an issue).</p>
+        </main>
+    </div>
+
+    <div id="disclaimerView" hidden>
+        <header class="appbar">
+            <button type="button" class="icon-btn" onclick="closeSubView()" aria-label="Back to settings">
+                <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </button>
+            <h1>Disclaimer</h1>
+        </header>
+        <main class="prose">
+            <p>This app and its developer are <strong>not affiliated with <span class="svc">NextDNS</span></strong>. “<span class="svc">NextDNS</span>” is a trademark of its owner; it is used here only to say which service the app works with.</p>
+            <p>The app shows the official <span class="svc">NextDNS</span> website. Everything you see and change there is provided by <span class="svc">NextDNS</span> under its own user agreement and privacy policy.</p>
+            <p>The app is free software under the GNU General Public License v3 and comes with no warranty.</p>
+        </main>
+    </div>
+
+    <div id="snackbar" role="status" aria-live="polite"></div>
+
+    <script src="lib/reorder.js"></script>
+    <script>
+        'use strict';
+        // The app's bridges (undefined when the page is opened in a browser or by the page checks,
+        // which install stand-ins). S: ui/SettingsWindow · ACC: account/AccountsBridge · STORE: storage/StorageBridge.
+        const S = window.AndroidSettings;
+        const ACC = window.AndroidAccounts;
+        const STORE = window.AndroidStorage;
+
+        // Icons as SVG paths (Material Icons, Apache License 2.0).
+        const ICONS = {
+            more: 'M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
+            open: 'M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z',
+            edit: 'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
+            logout: 'M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z',
+            remove: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+            drag: 'M20 9H4v2h16V9zM4 15h16v-2H4v2z'
+        };
+        const MODE_NAMES = { system: 'Match system', light: 'White', dark: 'Black' };
+        const MODE_HINTS = { system: 'Follows your phone’s dark mode', light: 'Light design', dark: 'Dark design' };
+
+        // ------------------------------------------------------------ small helpers
+        // el('div', {class: 'row', onclick: fn}, child, 'text') builds an element. User text is only ever
+        // added as a text node (never innerHTML), so a name like "<b>" shows as typed and can't run code.
+        function el(tag, attrs, ...children) {
+            const node = document.createElement(tag);
+            for (const [k, v] of Object.entries(attrs || {})) {
+                if (v === null || v === undefined || v === false) continue;
+                if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+                else node.setAttribute(k, v === true ? '' : v);
+            }
+            for (const c of children) {
+                if (c === null || c === undefined || c === false) continue;
+                node.append(c instanceof Node ? c : document.createTextNode(String(c)));
+            }
+            return node;
+        }
+        function icon(name) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.setAttribute('aria-hidden', 'true');
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', ICONS[name]);
+            svg.append(path);
+            return svg;
+        }
+        function parse(json) {
+            try { return JSON.parse(json); } catch (e) { return {}; }
+        }
+
+        // Snackbar: the short message at the bottom, with an optional action button.
+        let snackTimer = 0;
+        function snack(text, actionLabel, action) {
+            const bar = document.getElementById('snackbar');
+            bar.replaceChildren(el('span', {}, text));
+            if (actionLabel) {
+                bar.append(el('button', { type: 'button', class: 'text-btn', onclick: () => { hideSnack(); action(); } }, actionLabel));
+            }
+            bar.classList.add('show');
+            clearTimeout(snackTimer);
+            snackTimer = setTimeout(hideSnack, actionLabel ? 6000 : 3500);
+        }
+        function hideSnack() { document.getElementById('snackbar').classList.remove('show'); }
+
+        // Dialogs and the bottom sheet: a stack, so Back closes the top one.
+        const overlays = [];
+        function openOverlay(content, asSheet) {
+            const scrim = el('div', { class: 'scrim' + (asSheet ? ' sheet-scrim' : '') });
+            scrim.addEventListener('click', (e) => { if (e.target === scrim) closeOverlay(); });
+            scrim.append(content);
+            document.body.append(scrim);
+            overlays.push(scrim);
+            const focusable = content.querySelector('input, button');
+            if (focusable) setTimeout(() => focusable.focus(), 50);
+            return scrim;
+        }
+        function closeOverlay() {
+            const top = overlays.pop();
+            if (top) top.remove();
+        }
+        function dialog(title, body, actions) {
+            const box = el('div', { class: 'dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
+                el('h2', {}, title), body,
+                el('div', { class: 'actions' }, ...actions.map(a =>
+                    el('button', { type: 'button', class: 'text-btn' + (a.danger ? ' danger' : ''), onclick: a.onclick }, a.label))));
+            return openOverlay(box, false);
+        }
+
+        // Android's Back button (called by ui/SettingsWindow). true = "handled, keep Settings open".
+        window.handleBack = function () {
+            if (overlays.length) { closeOverlay(); return true; }
+            if (Reorder.active()) { Reorder.cancel(); return true; }
+            if (subView) { closeSubView(); return true; }
+            return false;
+        };
+        function closeSettings() { if (S) S.close(); }
+
+        // ------------------------------------------------------------ sub-screens
+        let subView = null;      // name of the open sub-screen, or null
+        let mainScroll = 0;      // where Settings was scrolled, restored on the way back
+        function openSubView(name) {
+            mainScroll = window.scrollY;
+            document.getElementById('mainView').hidden = true;
+            document.getElementById(name + 'View').hidden = false;
+            subView = name;
+            window.scrollTo(0, 0);
+        }
+        function closeSubView() {
+            if (!subView) return;
+            document.getElementById(subView + 'View').hidden = true;
+            document.getElementById('mainView').hidden = false;
+            subView = null;
+            window.scrollTo(0, mainScroll);
+        }
+
+        // ------------------------------------------------------------ Accounts
+        // accountsData = what AccountsBridge.json() sends: {accounts:[{id,name,number}], current, canAdd, multiAccount}
+        let accountsData = { accounts: [] };
+
+        function loadAccounts() {
+            if (!ACC) { document.getElementById('accounts').hidden = true; return; }
+            renderAccounts(parse(ACC.getAccountsJson()));
+        }
+        // Every change goes through here: the bridge answers with the fresh list (and an error text if
+        // it refused), and the list is redrawn from that answer, never from what the page assumed.
+        function applyAccounts(json, successText) {
+            const data = parse(json);
+            renderAccounts(data);
+            if (data.error) { snack(data.error); return false; }
+            if (successText) snack(successText);
+            return true;
+        }
+        function findAccount(id) {
+            return (accountsData.accounts || []).find(a => a.id === id) || null;
+        }
+        function renderAccounts(data) {
+            accountsData = data && data.accounts ? data : { accounts: [] };
+            const list = document.getElementById('accountList');
+            list.replaceChildren(...accountsData.accounts.map(accountRow));
+            document.getElementById('addAccountRow').hidden = !accountsData.canAdd;
+            document.getElementById('singleAccountHint').hidden = accountsData.multiAccount !== false;
+        }
+        function accountRow(a) {
+            const isCurrent = a.id === accountsData.current;
+            const only = accountsData.accounts.length < 2;
+            const handle = el('button', { type: 'button', class: 'icon-btn drag-handle', disabled: only,
+                'aria-label': 'Move ' + a.name + ': drag, or use the arrow keys' }, icon('drag'));
+            const row = el('div', {
+                class: 'row clickable reorder-row', role: 'listitem', tabindex: '0', 'data-id': a.id,
+                'aria-label': 'Account ' + a.number + ', ' + a.name + (isCurrent ? ', open now' : ''),
+                onclick: (e) => { if (!e.target.closest('.icon-btn')) ACC.openAccount(a.id); },
+                onkeydown: (e) => { if (e.key === 'Enter' && e.target === e.currentTarget) ACC.openAccount(a.id); }
+            },
+                el('span', { class: 'badge', 'aria-hidden': 'true' }, a.number),
+                el('div', { class: 'text' },
+                    el('div', { class: 'title' }, a.name),
+                    isCurrent ? el('div', { class: 'sub meta' }, el('span', { class: 'chip' }, 'Open')) : null),
+                el('div', { class: 'row-actions' },
+                    el('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Options for ' + a.name,
+                        onclick: () => openAccountSheet(a.id) }, icon('more')),
+                    handle));
+            handle.addEventListener('pointerdown', (e) => Reorder.start(e, row, saveOrder));
+            handle.addEventListener('keydown', (e) => Reorder.key(e, row, saveOrder));
+            return row;
+        }
+        function saveOrder(ids, movedId) {
+            applyAccounts(ACC.reorderAccounts(JSON.stringify(ids)));
+            const moved = findAccount(movedId);
+            if (moved) {
+                document.getElementById('accountStatus').textContent =
+                    moved.name + ': position ' + moved.number + ' of ' + accountsData.accounts.length;
+                const handle = document.querySelector('#accountList [data-id="' + CSS.escape(movedId) + '"] .drag-handle');
+                if (handle) handle.focus();
+            }
+        }
+        function nameField(value, placeholder) {
+            return el('input', { class: 'field', type: 'text', maxlength: '40', value: value || '',
+                placeholder: placeholder, 'aria-label': 'Account name', autocomplete: 'off' });
+        }
+        function openAddDialog() {
+            const before = new Set(accountsData.accounts.map(a => a.id));
+            const input = nameField('', 'e.g. Home, Work');
+            const add = () => {
+                if (!applyAccounts(ACC.addAccount(input.value))) return;
+                closeOverlay();
+                const added = accountsData.accounts.find(a => !before.has(a.id));
+                if (added) snack('Added “' + added.name + '”. Open it to sign in.', 'Open', () => ACC.openAccount(added.id));
+            };
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') add(); });
+            dialog('Add account',
+                el('div', {}, el('p', {}, 'Give it a name you\'ll recognise in the menu. It gets its own separate storage, so you can sign in with a different login.'), input),
+                [{ label: 'Cancel', onclick: closeOverlay }, { label: 'Add', onclick: add }]);
+        }
+        function openRenameDialog(id) {
+            const a = findAccount(id);
+            if (!a) return;
+            const input = nameField(a.name, 'Account name');
+            const save = () => { if (applyAccounts(ACC.renameAccount(id, input.value))) closeOverlay(); };
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
+            dialog('Rename account', input, [{ label: 'Cancel', onclick: closeOverlay }, { label: 'Save', onclick: save }]);
+        }
+        // The ⋮ button: a bottom sheet with what can be done with one account.
+        function openAccountSheet(id) {
+            const a = findAccount(id);
+            if (!a) return;
+            const item = (iconName, label, onclick, danger, disabled) =>
+                el('button', { type: 'button', class: 'item clickable' + (danger ? ' danger' : ''), onclick, disabled },
+                    icon(iconName), el('span', {}, label));
+            const sheet = el('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': a.name },
+                el('div', { class: 'handle' }),
+                el('div', { class: 'sheet-head' },
+                    el('span', { class: 'badge', 'aria-hidden': 'true' }, a.number),
+                    el('div', { class: 'text' }, el('div', { class: 'title' }, a.name),
+                        el('div', { class: 'sub' }, 'Account ' + a.number))),
+                item('open', 'Open', () => { closeOverlay(); ACC.openAccount(id); }),
+                item('edit', 'Rename', () => { closeOverlay(); openRenameDialog(id); }),
+                el('hr', {}),
+                item('logout', 'Sign out', () => { closeOverlay(); confirmSignOut(a); }),
+                // The last account can't be removed (there must always be one): greyed out.
+                item('remove', 'Remove account', () => { closeOverlay(); confirmRemove(a); }, true,
+                    accountsData.accounts.length < 2));
+            openOverlay(sheet, true);
+        }
+        function confirmSignOut(a) {
+            dialog('Sign out of “' + a.name + '”?',
+                el('p', {}, 'This deletes the login and site data of this account on this phone. The account stays in the list; open it to sign in again.'),
+                [{ label: 'Cancel', onclick: closeOverlay },
+                 { label: 'Sign out', onclick: () => { closeOverlay(); applyAccounts(ACC.signOutAccount(a.id), 'Signed out of “' + a.name + '”'); } }]);
+        }
+        function confirmRemove(a) {
+            dialog('Remove “' + a.name + '”?',
+                el('p', {}, 'The account and everything it stored on this phone (login, site data, cache) will be deleted. Your ' + serviceName + ' account itself isn\'t affected.'),
+                [{ label: 'Cancel', onclick: closeOverlay },
+                 { label: 'Remove', danger: true, onclick: () => { closeOverlay(); applyAccounts(ACC.removeAccount(a.id), 'Removed “' + a.name + '”'); } }]);
+        }
+
+        // ------------------------------------------------------------ simple settings
+        let settings = {};
+        let serviceName = 'NextDNS';
+
+        function loadSettings() {
+            if (!S) return;
+            settings = parse(S.getSettingsJson());
+            if (settings.service) {
+                serviceName = settings.service;
+                for (const span of document.querySelectorAll('.svc')) span.textContent = serviceName;
+            }
+            if (settings.app_name) document.getElementById('aboutName').textContent = settings.app_name;
+            if (settings.version) document.getElementById('aboutSub').textContent = 'Version ' + settings.version + ' · source code · report an issue';
+            document.getElementById('pinch_zoom_page').checked = !!settings.pinch_zoom_page;
+            document.getElementById('app_lock').checked = !!settings.app_lock;
+            showTheme(settings.theme_mode);
+            showLiveTabs(settings.max_live_tabs || 3);
+        }
+
+        // Theme: the app answers with the new colours, so this page repaints at once.
+        function showTheme(mode) {
+            settings.theme_mode = MODE_NAMES[mode] ? mode : 'system';
+            document.getElementById('themeSub').textContent = MODE_NAMES[settings.theme_mode];
+        }
+        function applyThemeCss(css) {
+            let style = document.getElementById('app-theme');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'app-theme';
+                document.head.append(style);
+            }
+            style.textContent = css;
+        }
+        function openThemeDialog() {
+            const list = el('div', { role: 'radiogroup', 'aria-label': 'Theme' });
+            const draw = () => {
+                list.replaceChildren(...Object.keys(MODE_NAMES).map(mode =>
+                    el('button', { type: 'button', class: 'radio-row clickable', role: 'radio',
+                        'aria-checked': String(settings.theme_mode === mode),
+                        onclick: () => {
+                            const answer = S ? parse(S.setThemeMode(mode)) : { mode };
+                            showTheme(answer.mode);
+                            if (answer.css) applyThemeCss(answer.css);
+                            draw();
+                        } },
+                        el('span', { class: 'radio' }),
+                        el('div', { class: 'text' }, el('div', { class: 'title' }, MODE_NAMES[mode]),
+                            el('div', { class: 'sub' }, MODE_HINTS[mode])))));
+            };
+            draw();
+            dialog('Theme', list, [{ label: 'Done', onclick: closeOverlay }]);
+        }
+
+        // Accounts kept loaded: a grid of numbers.
+        function liveTabsText(n) { return n + (n === 1 ? ' account' : ' accounts'); }
+        function showLiveTabs(n) {
+            settings.max_live_tabs = n;
+            document.getElementById('liveTabsSub').textContent = liveTabsText(n);
+        }
+        function openLiveTabsDialog() {
+            const limit = settings.max_live_tabs_limit || 10;
+            const grid = el('div', { class: 'number-grid', role: 'radiogroup', 'aria-label': 'Accounts kept loaded' });
+            for (let n = 1; n <= limit; n++) {
+                grid.append(el('button', { type: 'button', role: 'radio', class: 'clickable',
+                    'aria-checked': String(n === settings.max_live_tabs), 'aria-label': liveTabsText(n),
+                    onclick: () => { showLiveTabs(n); if (S) S.setMaxLiveTabs(n); closeOverlay(); } }, n));
+            }
+            dialog('Accounts kept loaded',
+                el('div', {}, el('p', {}, 'How many accounts keep their page in memory at the same time.'), grid),
+                [{ label: 'Cancel', onclick: closeOverlay }]);
+        }
+
+        // App lock: the app asks for the phone's unlock first and then calls onAppLock with the real
+        // state, so the switch never shows something that didn't happen.
+        window.onAppLock = function (on, message) {
+            const box = document.getElementById('app_lock');
+            box.checked = !!on;
+            box.disabled = false;
+            if (message) snack(message);
+        };
+
+        // Clear cache: storage/StorageBridge measures in the background and answers through onCacheSize.
+        let cacheBytes = -1;
+        let clearing = false;
+        function formatBytes(n) {
+            if (n < 1024 * 1024) return Math.max(0, Math.round(n / 1024)) + ' KB';
+            return (n / (1024 * 1024)).toFixed(n < 10 * 1024 * 1024 ? 1 : 0) + ' MB';
+        }
+        window.onCacheSize = function (bytes) {
+            cacheBytes = bytes;
+            document.getElementById('cacheSize').textContent = 'Now ' + formatBytes(bytes) + ' · logins stay';
+            if (clearing) {
+                clearing = false;
+                snack('Cache cleared. Now ' + formatBytes(bytes) + '.');
+            }
+        };
+        function confirmClearCache() {
+            if (!STORE) return;
+            dialog('Clear the cache?',
+                el('p', {}, 'Deletes the website’s stored files (scripts, fonts, images) for every account'
+                    + (cacheBytes >= 0 ? ', about ' + formatBytes(cacheBytes) + ' in all' : '')
+                    + '. Your logins, accounts and settings stay. Pages load a little slower the first time afterwards.'),
+                [{ label: 'Cancel', onclick: closeOverlay },
+                 { label: 'Clear', onclick: () => {
+                     closeOverlay();
+                     clearing = true;
+                     document.getElementById('cacheSize').textContent = 'Clearing…';
+                     STORE.clearCache();
+                 } }]);
+        }
+
+        function openAbout() { if (S) S.openAbout(); }
+        function openLink(name) { if (S) S.openLink(name); }
+
+        // ------------------------------------------------------------ start
+        // A tap anywhere on a row with a switch flips the switch (bigger touch target).
+        document.addEventListener('click', (e) => {
+            const row = e.target.closest('.row');
+            if (!row || e.target.closest('label.switch, button, a, input')) return;
+            const input = row.querySelector('label.switch input');
+            if (input && !input.disabled) input.click();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            loadAccounts();
+            if (STORE) STORE.measureCache(); else document.getElementById('data').hidden = true;
+
+            document.getElementById('pinch_zoom_page').addEventListener('change', (e) => {
+                if (S) S.setPinchZoomPage(e.target.checked);
+            });
+            document.getElementById('app_lock').addEventListener('change', (e) => {
+                const wanted = e.target.checked;
+                e.target.checked = !wanted;      // stays as it was until the app confirms (onAppLock)
+                e.target.disabled = true;        // no second tap while the unlock sheet is up
+                if (S) S.setAppLock(wanted); else window.onAppLock(!wanted, null);
+            });
+
+            // The app bar gets a tinted background once the page is scrolled under it.
+            window.addEventListener('scroll', () => {
+                for (const bar of document.querySelectorAll('.appbar')) bar.classList.toggle('scrolled', window.scrollY > 4);
+            }, { passive: true });
+
+            // settings.html#accounts opens scrolled to that section.
+            if (location.hash) {
+                const target = document.getElementById(location.hash.slice(1));
+                if (target) target.scrollIntoView();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+// Where Gradle downloads things from.
+pluginManagement {
+    repositories {
+        // Order matters: Google's repository holds the Android Gradle Plugin and all its parts, so it
+        // is asked first. (With the Plugin Portal first, every part is looked up there, and it forwards
+        // to Maven Central, which rate-limits busy machines such as CI runners.)
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    // Libraries may only come from the two repositories below, never from one named in a module.
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "NextDNSManagerPlus"
+include ':app'

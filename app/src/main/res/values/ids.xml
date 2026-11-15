@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keys for View.setTag(key, value): small per-WebView state that must die with the WebView. -->
+<resources>
+    <item name="tag_desktop_mode" type="id" />  <!-- web/DesktopMode -->
+    <item name="tag_page_zoom" type="id" />     <!-- web/PageZoom -->
+    <item name="tag_load_failed" type="id" />   <!-- web/TabManager + web/LoadErrors -->
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only what is visible before the code has styled the screen (theme/Themes holds the real colours;
+     keep these four the same as its LIGHT values). values-night/colors.xml has the dark ones. -->
+<resources>
+    <color name="top_bar_background">#FFFFFFFF</color>
+    <color name="chip_background">#FFE9ECEF</color>
+    <color name="on_surface">#FF212529</color>
+    <color name="on_surface_variant">#FF495057</color>
+</resources>
