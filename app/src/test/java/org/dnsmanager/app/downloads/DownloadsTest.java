@@ -6,17 +6,17 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-/** Which addresses DownloadManager may fetch, and data: file names ({@link Downloads}). */
+/** Which addresses go to the browser, and data: file names ({@link Downloads}). */
 public class DownloadsTest {
 
     @Test
-    public void onlyHttpAndHttpsAreDownloadedByAndroid() {
-        assertTrue(Downloads.isDownloadable("https://apple.nextdns.io/?profile=abc"));
-        assertTrue(Downloads.isDownloadable(" HTTP://example.com/file "));
-        assertFalse(Downloads.isDownloadable("blob:https://my.nextdns.io/123"));
-        assertFalse(Downloads.isDownloadable("data:,x"));
-        assertFalse(Downloads.isDownloadable("file:///sdcard/x"));
-        assertFalse(Downloads.isDownloadable(null));
+    public void onlyHttpAndHttpsGoToTheBrowser() {
+        assertTrue(Downloads.isWebAddress("https://apple.nextdns.io/?profile=abc"));
+        assertTrue(Downloads.isWebAddress(" HTTP://example.com/file "));
+        assertFalse(Downloads.isWebAddress("blob:https://my.nextdns.io/123"));
+        assertFalse(Downloads.isWebAddress("data:,x"));
+        assertFalse(Downloads.isWebAddress("file:///sdcard/x"));
+        assertFalse(Downloads.isWebAddress(null));
     }
 
     @Test

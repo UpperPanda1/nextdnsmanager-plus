@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The app icon. EDIT THIS FILE to change the icon everywhere, then run the "App icon" workflow (GitHub → Actions →
+  App icon → Run workflow) or tools/icon yourself (PROJECT.md §7, "Change the app icon").
+
+  Rules the generator (tools/icon/generate.mjs) needs:
+    * viewBox "0 0 108 108" = an Android adaptive icon (108 x 108 dp). Only the middle 66 x 66 (from 21 to 87)
+      is sure to be visible on every launcher shape; the generator stops if the foreground reaches outside it.
+    * <rect id="background" fill="#RRGGBB"/>: one flat colour.
+    * <g id="foreground">: <path> elements only, each with d, fill="#RRGGBB" or "#FFFFFF", optional
+      fill-rule="evenodd" (holes). The group may have transform="translate(x y) scale(s)" (nothing else).
+      The foreground also becomes the "themed icon" (Android 13+), drawn in one colour by the phone.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
+  <rect id="background" width="108" height="108" fill="#0056B3"/>
+  <!-- A shield (DNS protection, Material Icons "shield", Apache-2.0) with a "+" cut out: NextDNS Manager+. -->
+  <g id="foreground" transform="translate(24 24) scale(2.5)">
+    <path fill="#FFFFFF" fill-rule="evenodd" d="M12,1L3,5v6c0,5.55 3.84,10.74 9,12 5.16,-1.26 9,-6.45 9,-12V5l-9,-4zM11,7.5h2v3h3v2h-3v3h-2v-3H8v-2h3z"/>
+  </g>
+</svg>

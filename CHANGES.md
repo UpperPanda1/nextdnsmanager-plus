@@ -4,6 +4,34 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-15 — Icon from one SVG (App icon workflow); simpler downloads
+
+**Icon.** The icon now has one source, `artwork/icon.svg`. `tools/icon/generate.mjs` makes the launcher icon's two
+vector layers (`res/drawable/ic_launcher_background.xml`, `ic_launcher_foreground.xml`, the foreground doubling as
+the themed icon) and the 512 × 512 store icon (`fastlane/metadata/android/en-US/images/icon.png`), and refuses a
+drawing outside the launcher's safe zone. New workflow **App icon** (`.github/workflows/icon.yml`, modelled on LLM
+Central's): run by hand, it regenerates, commits to the chosen branch and starts CI; on a push that touches the icon
+it checks the vector files match the SVG. How to change the icon: PROJECT.md §7 "Change the app icon". The icon
+itself is unchanged (same path, same colours).
+
+**Downloads.** The owner reported that the Apple configuration profile and the log export need no login and open in
+the browser. So http(s) downloads now go to the browser (no DownloadManager, no cookie copying); the app only saves
+what a browser can't fetch: `data:` files, i.e. the **2FA recovery codes**.
+
+**Verified.** Generator: drawable files byte-identical to the hand-made ones in their paths, two runs give
+identical output (all three files), preview looked at (circle, rounded square, themed). Workflow: valid YAML; its
+check step simulated locally on the committed tree (no difference after regenerating). Clean build: tests pass,
+0 lint issues (numbers below). Not verified: the workflow on GitHub (first run after this push).
+
+**Size.** Release APK (clean build) 186,042 → **185,258 bytes**; download 98.2 KB. 83 tests, 0 lint issues, 6 page checks.
+
+**What to test on your phone**
+
+1. In the dashboard: Account → two-factor authentication → recovery codes → Download: "Saved to Downloads"; the file holds the codes.
+2. Setup page → Apple configuration profile, and Logs → Download: the browser opens and downloads the file.
+
+---
+
 ## 2026-11-15 — Own launcher icon; first commit
 
 **What.** The launcher icon was the only thing left from the original NextDNS Manager (21 files, found by comparing

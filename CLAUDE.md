@@ -34,8 +34,8 @@ test, Private DNS shortcut, downloads, desktop site, pinch to zoom, White/Black/
 (2026-11-14/15) on a new orphan branch from **LLM Central** (`UpperPanda1/assist`: accounts, tabs, settings design;
 everything AI-related stripped) plus the NextDNS-specific features of **NextDNS Manager** (`doubleangels/
 nextdnsmanager`, which this repository was forked from). Both GPL-3.0. A sibling **AdGuard DNS Manager** is planned
-from the same code (§8). **Status:** first version built, unit-tested, linted, page-checked, **committed**
-(2026-11-15, first commit of the orphan branch; **not pushed yet**: waiting for the owner); **not yet tested on a phone**.
+from the same code (§8). **Status:** first version built, unit-tested, linted, page-checked, committed and
+pushed (2026-11-15, orphan branch); **not yet tested on a phone**.
 
 ## 3. Owner context and preferences
 
@@ -77,6 +77,8 @@ cd /home/user/nextdnsmanager-plus && export ANDROID_HOME=${ANDROID_HOME:-$HOME/a
 ./gradlew --no-daemon -q testDebugUnitTest --tests '*AccountStoreTest' # one test class
 ./gradlew --no-daemon clean assembleRelease && stat -c %s app/build/outputs/apk/release/app-release-unsigned.apk
 #   release size: measure on a CLEAN build (incremental builds showed a wrong, smaller figure); record in CHANGES.md
+# icon files from artwork/icon.svg (after editing the SVG; or run Actions → App icon):
+cd tools/icon && ln -sfn /opt/node-tools/node_modules node_modules && CHROMIUM_PATH=/opt/pw-browsers/chromium node generate.mjs; rm node_modules; cd ../..
 # page checks (Chromium + Playwright are pre-installed in the sandbox):
 cd tools/page-checks && ln -sfn /opt/node-tools/node_modules node_modules && CHROMIUM_PATH=/opt/pw-browsers/chromium node run-all.mjs; rm node_modules
 ```
@@ -100,7 +102,8 @@ cd tools/page-checks && ln -sfn /opt/node-tools/node_modules node_modules && CHR
 - **No Google/Apple sign-in code** for NextDNS (owner). It comes back only for AdGuard (§8).
 - **No swipe to refresh, no text-size feature, no back button in the top bar** (owner).
 - Theme: exactly **White, Black, Match system**; accent `#0056B3`; status bar = page background.
-- Everything about the DNS service in `site/Site.java`; all colours in `theme/Themes.java`.
+- Everything about the DNS service in `site/Site.java`; all colours in `theme/Themes.java`; the icon only in
+  `artwork/icon.svg` (`drawable/ic_launcher_*.xml` and the store icon are generated; never edit them by hand).
 - applicationId frozen after the first public release.
 
 ## 7. Coding conventions
@@ -132,7 +135,7 @@ Reuse **everything** except what names or depends on NextDNS. Recommended: Gradl
 | `status/StatusRules.fromTest` | maybe | AdGuard's check page answers differently: adapt or rely on Private DNS only |
 | `ui/PingWindow` + menu item | maybe | only if AdGuard has an equivalent page |
 | Sign-in | **add** | AdGuard offers Google/Apple sign-in. Port LLM Central's `provider/SignInHosts`, `web/SignInUserAgent` (Google answers `403 disallowed_useragent` to WebViews; only the `accounts.google.com` page gets a desktop-Linux user agent) and `web/PopupWindows` if sign-in opens pop-ups; add the sign-in hosts to the in-app domains |
-| `strings.xml` `app_name`, `applicationId`, `drawable/ic_launcher_*.xml` ✎ | no | new app name, id, icon |
+| `strings.xml` `app_name`, `applicationId`, `artwork/icon.svg` ✎ | no | new app name, id, icon (then run the generator) |
 | `assets/settings.html`, `about.html` | yes | service name fills in from `Site.NAME` (`.svc`); check Privacy/Disclaimer wording and the About repository/credits |
 | Everything else (`web/`, `account/`, `ui/`, `lock/`, `downloads/`, `storage/`, `theme/` minus Themes) | **yes** | — |
 
@@ -144,7 +147,8 @@ Reuse **everything** except what names or depends on NextDNS. Recommended: Gradl
   dashboard, else `matchMedia('(prefers-color-scheme: dark)')`. Viewport `maximum-scale=1` (zoom banned). 2FA
   recovery codes = `<a download href="data:text/plain;charset=UTF-8,…">`. Log export =
   `window.location = <url from /profiles/{id}/logs/download>`. Static files: hashed names, `Cache-Control: public,
-  max-age=31536000`; HTML: `max-age=0, must-revalidate` + `ETag`.
+  max-age=31536000`; HTML: `max-age=0, must-revalidate` + `ETag`. The Apple configuration profile and log export
+  need no login and open in the browser (owner, 2026-11-15); only the `data:` recovery codes need the app.
 - **test.nextdns.io** answers `302` to a random subdomain (fresh DNS lookup) then JSON, e.g. `{"status":
   "unconfigured","resolver":…,"srcIP":…,"server":…}`; HEAD gives 405. `HttpURLConnection` follows the https→https
   redirect by itself. The "in use" format (`status: ok`, `protocol`) is from the fork's code, not seen live.
@@ -159,7 +163,7 @@ Reuse **everything** except what names or depends on NextDNS. Recommended: Gradl
   `setDeviceCredentialAllowed(true)` (combinations with `DEVICE_CREDENTIAL` aren't supported before API 30).
 - A `Dialog`'s dismiss listener is delivered later as a posted message: never `recreate()` from it when the screen is
   finishing (`ThemeRebuild.onSettingsClosed`).
-- Not verifiable here: anything on a phone (WebView profiles, unlock sheet, MediaStore, DownloadManager, status bar
+- Not verifiable here: anything on a phone (WebView profiles, unlock sheet, MediaStore, status bar
   colours, the website's dark mode following the app). Live site checks work with curl/Playwright.
 
 ## 10. Skills and plugins
@@ -179,8 +183,8 @@ tools work).
 - [x] First version on the orphan branch: all features in PROJECT.md §2.3; 83 unit tests, 0 lint issues, 6 page
       checks, CI workflow (2026-11-15).
 - [x] Own launcher icon (nothing of the fork left); first commit (2026-11-15).
-- [ ] Push when the owner says (the session's permission check refused a push without an explicit request).
-- [ ] Watch the first CI run on GitHub (`setup-node@v6` and the `pages` job are new).
+- [x] Icon generated from `artwork/icon.svg` + App icon workflow; downloads simplified; pushed (2026-11-15).
+- [ ] Check the first CI and App icon runs on GitHub (`setup-node@v6`, the `pages` job and `icon.yml` are untried).
 - [ ] Owner: phone test (CHANGES.md checklist).
 - [ ] README screenshots, store texts, release signing + release workflow (model: LLM Central `release.yml`).
 - [ ] Translations.

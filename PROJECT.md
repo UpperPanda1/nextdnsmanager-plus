@@ -246,7 +246,7 @@ Java: `app/src/main/java/org/dnsmanager/app/` (5,836 lines). Tests: `app/src/tes
 | `ConnectionStatus.java` | Listens to the network, runs the test request, paints the icon | — |
 | `StatusRules.java` | Private DNS + test answer → state and colour | `StatusRulesTest` |
 | **downloads/** | | |
-| `Downloads.java` | http(s) via DownloadManager with the account's cookie; data: via MediaStore | `DownloadsTest` |
+| `Downloads.java` | data: files (2FA recovery codes) saved via MediaStore; http(s) files handed to the browser | `DownloadsTest` |
 | `DataUrl.java` | Decodes `data:` addresses | `DataUrlTest` |
 | **storage/** | | |
 | `StorageBridge.java` | `AndroidStorage` for Settings: measure / clear cache | page check `settings-options` |
@@ -263,11 +263,15 @@ Other files:
 | `app/src/main/res/layout/activity_main.xml`, `top_bar.xml` | The screen and the top bar |
 | `app/src/main/res/values/strings.xml` | Texts of the native parts |
 | `app/src/main/res/drawable/ic_*.xml` | Icons (Material Icons, vector) |
-| `app/src/main/res/mipmap-anydpi/ic_launcher.xml` + `drawable/ic_launcher_*.xml` | Launcher icon (own design: white shield with a "+" on `#0056B3`; vector adaptive icon, no PNGs needed at minSdk 29) |
+| `app/src/main/res/mipmap-anydpi/ic_launcher.xml` + `drawable/ic_launcher_*.xml` | Launcher icon (own design: white shield with a "+" on `#0056B3`; vector adaptive icon, no PNGs needed at minSdk 29). The two `drawable` files are **generated** from `artwork/icon.svg` |
 | `app/src/main/res/xml/*backup*.xml` | Backup: settings yes, logins/site data never |
 | `app/lint.xml` | The lint warnings accepted on purpose, with reasons |
+| `artwork/icon.svg` | **The app icon's source**: edit this to change the icon everywhere ([§7](#7-how-to-change-things)) |
+| `tools/icon/generate.mjs` | Makes the launcher icon files and the store icon from `artwork/icon.svg` |
+| `fastlane/metadata/android/en-US/images/icon.png` | 512 × 512 store icon (F-Droid), generated |
 | `tools/page-checks/` | Browser checks of the HTML pages (README inside) |
 | `.github/workflows/ci.yml` | CI |
+| `.github/workflows/icon.yml` | "App icon" workflow: regenerates the icon files from the SVG (by hand) or checks them (on push) |
 | `.claude/hooks/session-start.sh` | Sets up the Android SDK in Claude's cloud sandbox |
 
 ---
@@ -402,11 +406,12 @@ Code: `ui/FindBar`, `web/FindInPage`, `assets/js/find_highlight.js`.
 
 ### 5.11 Downloads
 
+WebView doesn't download anything by itself: without `downloads/Downloads` a download button does nothing.
+
 | What | How |
 |---|---|
-| A file on a server (e.g. the Apple configuration profile) | `DownloadManager`, with the account's login cookie and user agent; notification; Downloads folder |
-| A `data:` link (the dashboard's 2FA recovery codes are one, checked in its code) | `downloads/DataUrl` decodes it; saved via MediaStore as "NextDNS download.txt" (WebView doesn't pass the page's own file name) |
-| Log export | the dashboard navigates to a download address it gets from its API: on nextdns.io → handled above; elsewhere → the browser downloads it |
+| **2FA recovery codes** (a `data:` link: the codes are inside the link, checked in the dashboard's code) | `downloads/DataUrl` decodes it; saved to Downloads via MediaStore as "NextDNS download.txt" (WebView doesn't pass the page's own file name). Only the app can do this: no browser could fetch a link the page made itself. **This is the reason the download code exists.** |
+| A file on a server: Apple configuration profile, log export | opened in the phone's **browser**, which downloads it. These need no login (owner, 2026-11-15), so the app doesn't download them itself. |
 
 No storage permission is needed on Android 10+.
 
@@ -475,6 +480,22 @@ Settings → Data shows the size before/after Clear cache; Android's App info �
 **Change a text:** native parts → `app/src/main/res/values/strings.xml`; Settings → `assets/settings.html`; About →
 `assets/about.html`. The service's name in pages comes from `Site.NAME` (elements with class `svc`).
 
+**Change the app icon** (launcher, themed icon, About screen and store icon all follow):
+
+1. Edit `artwork/icon.svg` (any editor, e.g. Inkscape or a text editor). Keep its rules, written at the top of the
+   file: a 108 × 108 canvas, `<rect id="background">` with one colour, `<g id="foreground">` with `<path>`s only
+   (optionally `transform="translate(x y) scale(s)"`), everything important within the middle 66 × 66.
+2. Generate the files, either way:
+   - **GitHub:** Actions → **App icon** → Run workflow → pick your branch. It generates the files, commits them to
+     that branch and starts CI, whose artifact has an APK with the new icon. The run's artifact `icon-files` has
+     `preview.png` (circle, rounded square, themed).
+   - **Locally:** `cd tools/icon && npm install && npx playwright install chromium && npm run generate`, then look at
+     `tools/icon/preview.png` and commit the changed files.
+3. A push that changes the SVG without the generated files fails the App icon check, so they can't drift apart.
+
+The generator refuses a drawing that reaches outside the safe zone or uses something Android's vector format can't
+take (it says what). The About screen needs nothing: it draws the launcher icon.
+
 **Change a colour:** `theme/Themes.java` (both schemes), then the fallback values at the top of `settings.html` and
 `about.html` (used only outside the app), then `res/values*/colors.xml` (start-up only). Run the tests:
 `ContrastTest` fails if text gets unreadable.
@@ -534,12 +555,13 @@ with `onclick="openSubView('xyz')"`.
 | Builds | debug + release (R8) | `./gradlew assembleDebug assembleRelease` |
 | Page checks | 6 Chromium checks of Settings, About and the zoom script with stand-in bridges (accounts flow, options, permissions = manifest, dark colours = `Themes.java`, 360 px width, About links) | `tools/page-checks` (README) |
 | CI | `.github/workflows/ci.yml`: job `android` (all of the above + APK artifact + size) and job `pages` (page checks + screenshots) on every push and PR | GitHub Actions |
+| Icon check | `.github/workflows/icon.yml`: on a push touching the icon, regenerates the vector files from `artwork/icon.svg` and fails if they differ | GitHub Actions |
 
 Proven to catch mistakes (mutation checks, 2026-11-15): loosening the domain rule fails `SiteTest` and
 `TabManagerTest`; an undeclared permission fails `settings-permissions`; a renamed theme option fails
 `settings-options`; the strict Base64 rule was found by `DataUrlTest`.
 
-**What no automated test covers:** anything on a real phone (WebView profiles, unlock sheet, DownloadManager,
+**What no automated test covers:** anything on a real phone (WebView profiles, unlock sheet, saving to Downloads,
 status bar colours, cache size). See the phone checklist in `CHANGES.md`.
 
 ---
@@ -577,7 +599,7 @@ Same code, different `site/Site.java`. What changes (also listed for Claude in C
 | Ping | `ping.nextdns.io` | replace or hide the menu item |
 | Legal links | `Site.LINKS` | AdGuard's |
 | Colours | `Themes.java` (NextDNS blue, `#212529`) | AdGuard's green and its dark background (read from its CSS like here) |
-| Name, id, icon | `strings.xml app_name`, `applicationId`, `drawable/ic_launcher_*.xml` | new ones (a different applicationId = a separate app) |
+| Name, id, icon | `strings.xml app_name`, `applicationId`, `artwork/icon.svg` (+ generator) | new ones (a different applicationId = a separate app) |
 | Texts naming the service | `.svc` spans fill in by themselves | check `strings.xml` and the Privacy/Disclaimer texts |
 
 Recommended route when it starts: make the service a Gradle **product flavor** (`nextdns`, `adguard`), each with its

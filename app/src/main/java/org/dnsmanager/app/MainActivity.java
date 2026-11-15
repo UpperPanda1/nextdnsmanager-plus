@@ -575,7 +575,7 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new TabClient());
         webView.setWebChromeClient(new TabChromeClient());
         webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) ->
-                Downloads.start(this, cookies, url, userAgent, contentDisposition, mimeType, BACKGROUND));
+                Downloads.start(this, url, BACKGROUND));
     }
 
     private boolean isVisibleTab(WebView view) {

@@ -1,0 +1,136 @@
+# App icon: makes every icon file from artwork/icon.svg (generator: tools/icon/generate.mjs). PROJECT.md §7.
+#
+# Two ways it runs:
+#   * By hand (Actions → App icon → Run workflow, pick your branch): generates the files and, if they changed,
+#     commits them to that branch as github-actions[bot], then starts CI so you get an APK with the new icon.
+#     Untick "commit" to only generate them and download them from the run's artifacts.
+#   * On a push that touches the SVG, the generator or this file: CHECK only. It fails if the committed vector
+#     files don't match artwork/icon.svg (then run it by hand). The store PNG isn't compared on push: it is drawn
+#     by Chromium, and another Chromium build may draw a few pixels differently.
+name: App icon
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Commit the new icon files to the chosen branch (untick = only generate and upload them)'
+        type: boolean
+        default: true
+  push:
+    paths:
+      - 'artwork/icon.svg'
+      - 'tools/icon/**'
+      - '.github/workflows/icon.yml'
+
+permissions: {}
+
+concurrency:
+  group: icon-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  icon:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # push the commit (manual run only)
+      actions: write    # start CI for that commit (manual run only)
+    env:
+      # Every file the generator writes. It must not change anything else (checked below).
+      ICON_FILES: >-
+        app/src/main/res/drawable/ic_launcher_background.xml
+        app/src/main/res/drawable/ic_launcher_foreground.xml
+        fastlane/metadata/android/en-US/images/icon.png
+      CHECKED_ON_PUSH: >-
+        app/src/main/res/drawable/ic_launcher_background.xml
+        app/src/main/res/drawable/ic_launcher_foreground.xml
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install the generator and Chromium
+        working-directory: tools/icon
+        run: |
+          npm install --ignore-scripts
+          npx playwright install --with-deps chromium
+
+      - name: Generate the icon files
+        working-directory: tools/icon
+        run: |
+          set -o pipefail
+          npm run --silent generate | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Compare with the committed files
+        id: compare
+        run: |
+          EXCLUDE=(':!tools/icon/node_modules' ':!tools/icon/package-lock.json' ':!tools/icon/preview.png')
+          for f in $ICON_FILES; do EXCLUDE+=(":!$f"); done
+          OTHER=$(git status --porcelain --untracked-files=all -- . "${EXCLUDE[@]}")
+          if [ -n "$OTHER" ]; then
+            echo "::error::The generator changed files outside ICON_FILES (update the list in icon.yml):"
+            echo "$OTHER"
+            exit 1
+          fi
+          CHANGED=$(git status --porcelain -- $ICON_FILES)
+          CHANGED_CHECKED=$(git status --porcelain -- $CHECKED_ON_PUSH)
+          echo "changed=$([ -n "$CHANGED" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "changed_checked=$([ -n "$CHANGED_CHECKED" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          if [ -z "$CHANGED" ]; then
+            echo "The icon files match artwork/icon.svg." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            { echo 'Icon files that differ from artwork/icon.svg:'; echo '```'; echo "$CHANGED"; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the generated files and the preview
+        uses: actions/upload-artifact@v7
+        with:
+          name: icon-files
+          path: |
+            app/src/main/res/drawable/ic_launcher_background.xml
+            app/src/main/res/drawable/ic_launcher_foreground.xml
+            fastlane/metadata/android/en-US/images/icon.png
+            tools/icon/preview.png
+
+      - name: Fail if the pushed icon files are out of date
+        if: github.event_name == 'push' && steps.compare.outputs.changed_checked == 'true'
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          echo "::error::artwork/icon.svg and the icon files don't match. Run Actions → App icon → Run workflow on branch '${BRANCH}'."
+          exit 1
+
+      - name: Commit and push the new icon files
+        if: github.event_name == 'workflow_dispatch' && inputs.commit && steps.compare.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          RUN_ID: ${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ "$REF_TYPE" != "branch" ]; then
+            echo "::error::Pick a branch (not a tag) in 'Use workflow from'."
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- $ICON_FILES
+          git commit -m 'Regenerate the app icon files from artwork/icon.svg' \
+                     -m "Made by the \"App icon\" workflow (tools/icon/generate.mjs), run ${RUN_ID}."
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "HEAD:refs/heads/${BRANCH}"
+          echo "Committed $(git rev-parse --short HEAD) to ${BRANCH}." | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # A push made with the workflow's own token starts no other workflow (GitHub's rule), so CI is started here.
+      - name: Build an APK with the new icon (start CI)
+        if: github.event_name == 'workflow_dispatch' && inputs.commit && steps.compare.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh workflow run ci.yml --repo "$REPO" --ref "$BRANCH"
+          echo "Started CI on ${BRANCH}: its artifact apks-<commit> has the APK with the new icon." | tee -a "$GITHUB_STEP_SUMMARY"

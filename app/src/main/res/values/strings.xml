@@ -44,7 +44,6 @@
     <string name="tab_unloaded">Unloaded. Tap to load</string>
     <string name="tab_load_failed">Couldn\'t load this page. Tap to retry</string>
     <string name="tab_gave_up">%1$s keeps crashing and was closed.</string>
-    <string name="download_started">Download started</string>
     <string name="download_saved">Saved to Downloads</string>
     <string name="download_failed">This file can\'t be downloaded.</string>
 

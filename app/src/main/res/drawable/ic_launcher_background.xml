@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Launcher icon background: the app's accent colour #0056B3 (theme/Themes.ACCENT). 108 x 108 dp, as adaptive
-     icons require. -->
+<!-- GENERATED from artwork/icon.svg by tools/icon/generate.mjs: launcher icon background. Don't edit by hand; edit the SVG and run
+     the "App icon" workflow (or the generator). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"

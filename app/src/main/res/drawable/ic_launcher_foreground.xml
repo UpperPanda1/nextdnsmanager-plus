@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Launcher icon foreground: a shield (DNS protection) with a "+" (the "+" of NextDNS Manager+) cut out of it.
-    Drawn in a 24-unit square, scaled 2.5 x to 60 dp and centred in the 108 dp canvas, so it stays inside the
-    66 dp "safe zone" every launcher shape keeps visible. fillType evenOdd makes the "+" a hole, so the background
-    colour (or the themed-icon colour) shows through. Shield: Material Icons "shield" (Apache License 2.0).
--->
+<!-- GENERATED from artwork/icon.svg by tools/icon/generate.mjs: launcher icon foreground (also the themed icon). Don't edit by hand; edit the SVG and run
+     the "App icon" workflow (or the generator). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"

@@ -25,9 +25,9 @@ file only on request.
 | Branch | `claude/gallant-bardeen-myrq5y`: an **orphan** branch. Its history starts with our first commit; nothing of the fork's history or files is in it (checked byte by byte). `main` still holds the old fork. |
 | Build | `./gradlew --no-daemon test lint assembleDebug assembleRelease` passes: **83 unit tests, 0 lint issues** |
 | Page checks | **6 of 6** pass |
-| Release APK | **186,042 bytes** (clean build), 98.4 KB download |
+| Release APK | **185,258 bytes** (clean build), 98.2 KB download |
 | Phone test | **not done yet**: 20-step checklist in CHANGES.md (entry "First version") + 2 icon steps |
-| Commits | 1 (root commit, no parent); **not pushed yet**: push when the owner says |
+| Commits | starts with a root commit (no parent); pushed to `origin` 2026-11-15 |
 | CI | `.github/workflows/ci.yml`; first run on GitHub happens at the first push: check it |
 
 ## 2. The documents and what each is for
@@ -61,7 +61,7 @@ app/
       ui/                 account menu, badge, Settings/About/Ping windows, lock cover, find bar, placeholders
       lock/               app lock (AppLock) + rules (LockRules)
       status/             connection status icon (ConnectionStatus) + rules (StatusRules)
-      downloads/          DownloadManager + data: files (Downloads, DataUrl)
+      downloads/          2FA recovery codes (data: files) to Downloads; other files → browser
       storage/            cache size + Settings bridge
     assets/
       settings.html       the Settings screen (HTML/CSS/JS in one file)
@@ -70,8 +70,11 @@ app/
       lib/reorder.js      drag-to-reorder
     res/                  layouts (activity_main, top_bar), strings, vector icons, launcher icon, backup rules
   src/test/java/…         unit tests (same packages), MapPrefs = settings stand-in
+artwork/icon.svg          THE APP ICON: edit this, then run Actions → App icon (PROJECT.md §7)
+tools/icon/               icon generator (artwork/icon.svg → launcher + store icon files)
+fastlane/metadata/        store icon (generated); store texts go here later (§7 of this file)
 tools/page-checks/        Chromium checks of the HTML pages (README inside)
-.github/workflows/ci.yml  CI
+.github/workflows/        ci.yml (build/test/lint/page checks), icon.yml (App icon)
 .claude/hooks/            cloud-session set-up (Android SDK, Maven mirror)
 ```
 
@@ -113,6 +116,9 @@ export ANDROID_HOME=${ANDROID_HOME:-$HOME/android-sdk}
   `apks-<commit>`, test/lint reports as artifact when it fails;
 - job **pages**: the page checks, screenshots as artifact.
 
+`.github/workflows/icon.yml` (**App icon**): run it by hand after editing `artwork/icon.svg` to regenerate and
+commit the icon files (it then starts CI); on a push it only checks that the files match the SVG.
+
 After a push: open the run; a red ✗ names the failing step. Also scan the log for `##[warning]` lines (keep zero).
 
 ## 6. Rules that must not be broken
@@ -148,7 +154,7 @@ Not submitted yet. What is already right, and what is still to do (LLM Central's
 **Still to do (in this order)**
 
 1. **Store texts and images** in `fastlane/metadata/android/en-US/`: `title.txt`, `short_description.txt` (≤ 80
-   characters), `full_description.txt`, `images/icon.png` (512 × 512), `images/phoneScreenshots/1.png …`,
+   characters), `full_description.txt`, `images/icon.png` (512 × 512; **already generated** from `artwork/icon.svg`), `images/phoneScreenshots/1.png …`,
    `changelogs/<versionCode>.txt`.
 2. **Release workflow** (copy LLM Central's `release.yml`): build unsigned, sign with **`apksigner` from build-tools
    34** (35 and Gradle's own signing fail F-Droid's `apksigcopier compare`, tested in LLM Central), publish on a `v*`
@@ -164,7 +170,7 @@ Not submitted yet. What is already right, and what is still to do (LLM Central's
 
 ## 8. Open tasks
 
-1. Push the branch (owner's go-ahead), then watch the first CI run on GitHub; fix anything it reports.
+1. Check the first CI and App icon runs on GitHub (Actions tab); fix anything they report.
 2. Owner's phone test (CHANGES.md checklists); fix findings.
 3. Open questions (PROJECT.md §10): PayPal pop-up payments go to the browser; data: downloads are named "NextDNS
    download.txt"; translations.
