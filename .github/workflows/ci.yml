@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   android:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
@@ -63,7 +63,7 @@ jobs:
             app/build/outputs/apk/release/*.apk
 
   pages:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: tools/page-checks
