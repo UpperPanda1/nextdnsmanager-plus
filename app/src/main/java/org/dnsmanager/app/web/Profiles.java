@@ -1,6 +1,8 @@
 package org.dnsmanager.app.web;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.WebStorage;
@@ -70,6 +72,18 @@ public final class Profiles {
      */
     static final long MAX_CACHE_BYTES = 20L * 1024 * 1024;
 
+    /**
+     * Longest wait for a wipe to report back. WebView normally answers within a second; if a callback never came, the
+     * account would stay closed until the app restarts, so after this time it counts as done (web/WipeGate.Join).
+     */
+    static final long WIPE_TIME_LIMIT_MS = 10_000;
+
+    /**
+     * Which containers are being emptied right now. Static on purpose: a wipe belongs to the app process, not to one
+     * screen object, so a screen rebuilt meanwhile (theme change) still sees it. Main thread only.
+     */
+    private static final WipeGate WIPES = new WipeGate();
+
     private Profiles() {
         // Only static methods.
     }
@@ -77,6 +91,11 @@ public final class Profiles {
     /** @return true if this phone's WebView supports separate profiles (= more than one account). */
     public static boolean isSupported() {
         return WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE);
+    }
+
+    /** The containers being emptied right now (TabManager asks it before loading a page). Main thread only. */
+    public static WipeGate wipes() {
+        return WIPES;
     }
 
     /** @return the key of the account's profile for sets of profile names ({@link #DEFAULT_KEY} or its name). */
@@ -125,26 +144,57 @@ public final class Profiles {
      * contents are wiped, which signs the account out at once either way; the empty folder of a
      * <i>removed</i> account is then deleted at the next app start by {@link #cleanUp}. The default
      * profile can never be deleted, only wiped.</p>
+     *
+     * <p><b>Asynchronous:</b> a wipe finishes in the background. Until then the container is marked in
+     * {@link #wipes()}, so its page isn't loaded half-way through the deletion (web/WipeGate explains why); then
+     * {@code done} runs on the main thread (at once if the profile could simply be deleted).</p>
+     *
+     * @param done runs on the main thread when the container is empty; receives the account id to load now (it was
+     *             asked for meanwhile) or null
      */
-    public static void forget(Account account) {
+    public static void forget(Account account, Done done) {
+        String key = keyOf(account);
         String name = account.profileName();
-        if (name == null) {
-            wipeDefault();
+        if (name != null) {
+            // (A positive feature check around the profile calls, as Android's lint tool wants.)
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
+                ProfileStore store = ProfileStore.getInstance();
+                try {
+                    store.deleteProfile(name); // works if the profile wasn't used in this app run (synchronous)
+                    done.wiped(null);
+                    return;
+                } catch (IllegalStateException inUse) {
+                    // Used in this app run → wipe its contents instead.
+                }
+                Profile profile = store.getProfile(name);
+                if (profile != null) {
+                    WipeGate.Join join = startWipe(key, done);
+                    wipe(profile, new Handler(Looper.getMainLooper()), join);
+                    return;
+                }
+            }
+            done.wiped(null); // nothing to delete (or no profiles on this WebView: only the default one exists)
             return;
         }
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
-            ProfileStore store = ProfileStore.getInstance();
-            try {
-                store.deleteProfile(name); // works if the profile wasn't used in this app run
-                return;
-            } catch (IllegalStateException inUse) {
-                // Used in this app run → wipe its contents instead.
-            }
-            Profile profile = store.getProfile(name);
-            if (profile != null) {
-                wipe(profile);
-            }
-        }
+        WipeGate.Join join = startWipe(key, done);
+        wipeDefault(new Handler(Looper.getMainLooper()), join);
+    }
+
+    /**
+     * Marks the container as being emptied and returns the counter its two deletions report to; when both did (or
+     * after {@link #WIPE_TIME_LIMIT_MS}), the mark goes and {@code done} runs.
+     */
+    private static WipeGate.Join startWipe(String key, Done done) {
+        WIPES.started(key);
+        WipeGate.Join join = new WipeGate.Join(2, () -> done.wiped(WIPES.finished(key)));
+        new Handler(Looper.getMainLooper()).postDelayed(join::force, WIPE_TIME_LIMIT_MS);
+        return join;
+    }
+
+    /** What {@link #forget} calls when the container is empty. */
+    public interface Done {
+        /** @param showAccountId the account to load now (asked for while the container was closed), or null */
+        void wiped(String showAccountId);
     }
 
     /**
@@ -215,36 +265,49 @@ public final class Profiles {
         }
     }
 
-    /** Deletes everything the default profile stored (the {@link Account#MAIN_ID} account's data). */
-    private static void wipeDefault() {
+    /**
+     * Deletes everything the default profile stored (the {@link Account#MAIN_ID} account's data). Calls
+     * {@code join.partDone()} twice, once per deletion, on the main thread.
+     */
+    private static void wipeDefault(Handler main, WipeGate.Join join) {
         if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
             Profile profile = ProfileStore.getInstance().getProfile(DEFAULT_KEY);
             if (profile != null) {
-                wipe(profile);
+                wipe(profile, main, join);
                 return;
             }
         }
-        // Older WebView: the classic app-wide calls act on the default profile.
+        // Older WebView: the classic app-wide calls act on the default profile. deleteAllData has no
+        // "done" callback, so it counts as done once it was asked.
         WebStorage.getInstance().deleteAllData();
+        main.post(join::partDone);
         CookieManager cookies = CookieManager.getInstance();
-        cookies.removeAllCookies(null);
+        cookies.removeAllCookies(removed -> main.post(join::partDone));
         cookies.flush();
     }
 
-    /** Deletes everything a profile stored: cookies, local storage, IndexedDB, cache. */
-    private static void wipe(Profile profile) {
+    /**
+     * Deletes everything a profile stored: cookies, local storage, IndexedDB, cache. Calls {@code join.partDone()}
+     * twice (storage, cookies), each when WebView reports that deletion done, always on the main thread
+     * (same pattern as LLM Central's {@code Profiles.wipe(profile, done)}).
+     */
+    private static void wipe(Profile profile, Handler main, WipeGate.Join join) {
         if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
             if (WebViewFeature.isFeatureSupported(WebViewFeature.DELETE_BROWSING_DATA)) {
-                // Newer WebView: one call removes all of it (docs: WebStorageCompat.deleteBrowsingData).
-                WebStorageCompat.deleteBrowsingData(profile.getWebStorage(), () -> { });
+                // Newer WebView: one call removes all of it (docs: WebStorageCompat.deleteBrowsingData); the
+                // callback runs when the deletion is complete.
+                WebStorageCompat.deleteBrowsingData(profile.getWebStorage(), main::post, join::partDone);
             } else {
-                // Older WebView: the classic call. It leaves the HTTP cache, which holds only the
+                // Older WebView: the classic call (no callback). It leaves the HTTP cache, which holds only the
                 // website's own files (scripts, images), never logins.
                 profile.getWebStorage().deleteAllData();
+                main.post(join::partDone);
             }
             CookieManager cookies = profile.getCookieManager();
-            cookies.removeAllCookies(null);
+            cookies.removeAllCookies(removed -> main.post(join::partDone));
             cookies.flush();
+        } else {
+            join.force(); // can't happen (callers check); keeps lint's feature check satisfied
         }
     }
 

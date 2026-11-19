@@ -735,7 +735,13 @@ public class MainActivity extends Activity {
                 findBar.closeIfSearching(tab);
             }
             tabManager.unload(account.id);   // the WebView must be gone before its data is deleted
-            Profiles.forget(account);
+            // Asynchronous: until the container is empty TabManager won't load a page into it (web/WipeGate);
+            // if the account was opened meanwhile, it loads now. A screen that is gone ignores the message.
+            Profiles.forget(account, showId -> {
+                if (!isDestroyed()) {
+                    tabManager.loadAfterWipe(showId);
+                }
+            });
             if (removed) {
                 DesktopMode.forget(Prefs.get(MainActivity.this), account.id); // signed out: the choice stays
             }

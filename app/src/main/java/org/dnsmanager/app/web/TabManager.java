@@ -61,6 +61,8 @@ public final class TabManager {
     private View placeholder;
     // Shown instead of a page that failed to load; may be null.
     private View retryPlaceholder;
+    // True after destroyAll (the screen is gone): a late "container emptied" message must not create a WebView.
+    private boolean destroyed;
 
     /**
      * @param container the view that holds the tabs (R.id.tabContainer)
@@ -181,11 +183,23 @@ public final class TabManager {
      * Like {@link #show(Account)}, but a tab that has to be created opens {@code startUrl} instead of
      * the dashboard's start page (used after a screen rebuild, so the user stays where they were).
      * Only the service's own https pages are accepted ({@link #isStartUrl}); anything else = start page.
+     *
+     * <p>If the account's container is still being emptied ("Sign out" / "Remove", web/WipeGate), no page is
+     * created yet: the account comes on screen with the "Unloaded" screen, and {@link #loadAfterWipe} loads it as
+     * soon as the deletion is done.</p>
+     *
+     * @return the WebView now on screen, or null while the account's container is being emptied
      */
     public WebView show(Account account, String startUrl) {
         WebView target = liveTabs.get(account.id);
         boolean isNew = target == null;
         if (isNew) {
+            String key = Profiles.keyOf(account);
+            if (Profiles.wipes().blocks(key)) {
+                Profiles.wipes().wantShown(key, account.id);
+                showWithoutPage(account);
+                return null;
+            }
             target = createTab(account);
         }
         liveAccounts.put(account.id, account); // keep the newest name
@@ -209,6 +223,38 @@ public final class TabManager {
             listener.onAccountShown(account);
         }
         return target;
+    }
+
+    /**
+     * Puts an account on screen without a page (its container is being emptied): the previous tab is hidden
+     * and paused as in {@link #show}, the "Unloaded" screen shows, the top bar follows.
+     */
+    private void showWithoutPage(Account account) {
+        if (!account.id.equals(current.id)) {
+            WebView previous = currentWebView();
+            if (previous != null) {
+                previous.setVisibility(View.GONE);
+                previous.onPause();
+            }
+        }
+        current = account;
+        updatePlaceholder();
+        if (listener != null) {
+            listener.onAccountShown(account);
+        }
+    }
+
+    /**
+     * An account's container was emptied (web/Profiles.forget reported back). If that account was asked for
+     * meanwhile and is still the one on screen, its page loads now. Main thread.
+     *
+     * @param accountId the account to load ({@link WipeGate#finished}), or null for nothing
+     */
+    public void loadAfterWipe(String accountId) {
+        if (destroyed || accountId == null || !accountId.equals(current.id) || isLoaded(accountId)) {
+            return;
+        }
+        show(current);
     }
 
     /**
@@ -329,6 +375,7 @@ public final class TabManager {
 
     /** Destroys every tab (MainActivity.onDestroy). */
     public void destroyAll() {
+        destroyed = true;
         for (String id : liveTabs.keySet().toArray(new String[0])) {
             closeTab(id);
         }

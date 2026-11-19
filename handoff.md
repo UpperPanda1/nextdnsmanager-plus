@@ -23,7 +23,7 @@ release workflow). Updated only when the owner asks for a handoff.
 | App | **NextDNS Manager+** 0.1.0: the NextDNS dashboard with up to 20 isolated accounts, numbered account chip/menu, connection-status icon, app lock, find in page, ping test, Private DNS shortcut, 2FA-code downloads, White/Black/Match-system theme |
 | Repository | `UpperPanda1/nextdnsmanager-plus` (GitHub fork of `doubleangels/nextdnsmanager`; address read at build time from `gradle.properties` `app.repoUrl`) |
 | Branch | **`claude/nextdns-manager-plus-review-el0q2u`** = newest work. It continues the orphan branch `claude/gallant-bardeen-myrq5y` (no fork history). `main` still holds the old fork |
-| Build | `./gradlew --no-daemon test lint assembleDebug assembleRelease` passes: **85 unit tests, 0 lint issues**; page checks **6 of 6** |
+| Build | `./gradlew --no-daemon test lint assembleDebug assembleRelease` passes: **92 unit tests, 0 lint issues**; page checks **6 of 6** (after R1, 2026-11-19) |
 | Release APK | **185,382 bytes** (clean build); SHA-256 identical from different clones and from **JDK 17 and 21** (commit `cc867de`) |
 | App code | last changed in `cc867de` (review 1 fixes); everything since is docs, README, release workflow |
 | CI | green (`ci.yml`): `android` on `ubuntu-latest`, `pages`/`icon` pinned to `ubuntu-24.04` (Playwright doesn't support 26.04) |

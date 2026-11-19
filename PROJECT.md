@@ -211,9 +211,10 @@ Java: `app/src/main/java/org/dnsmanager/app/` (5,836 lines). Tests: `app/src/tes
 | `AccountStore.java` | The account list and all its rules (add, rename, remove, reorder, numbering, limits, safe ids); saved as JSON | `AccountStoreTest` |
 | `AccountsBridge.java` | `AndroidAccounts` for the Settings page; every call answers with the fresh list | page check `settings-accounts` |
 | **web/** | | |
-| `TabManager.java` | One WebView per loaded account, show/unload/switch, retry screen, renderer-crash recovery, `isStartUrl` | `TabManagerTest` |
+| `TabManager.java` | One WebView per loaded account, show/unload/switch, retry screen, renderer-crash recovery, `isStartUrl`; no page while the account's container is being emptied (`loadAfterWipe`) | `TabManagerTest` |
+| `WipeGate.java` | Which containers are being emptied (counter per container), which account to load when done, `Join` (run once after both deletions or the time limit) | `WipeGateTest` |
 | `TabLru.java` | Which loaded tab closes first when over the limit | `TabLruTest` |
-| `Profiles.java` | Account containers (WebView profiles), cache cap, Clear cache for all, sign-out/remove wipe, start-up clean-up | — (Android-only; rules in [§6](#6-cache-management)) |
+| `Profiles.java` | Account containers (WebView profiles), cache cap, Clear cache for all, sign-out/remove wipe (reports when done, `WipeGate`), start-up clean-up | — (Android-only; rules in [§6](#6-cache-management)) |
 | `LoadErrors.java` | When the "Tap to retry" screen comes and goes | `LoadErrorsTest` |
 | `WebViewRecovery.java` | Replace/discard a WebView whose renderer died | — |
 | `DesktopMode.java` | Desktop site per account (user agent, client hints, viewport script) | `DesktopModeTest` |
@@ -475,9 +476,12 @@ without bound; reloading must reuse the cache instead of storing copies.
    only, that WebView's profile); every other profile through a short-lived invisible WebView put into it. Called by
    both the account menu icon and Settings.
 5. **Removed accounts leave nothing:** the profile is deleted (or wiped if in use, then deleted at the next start by
-   `Profiles.cleanUp`). Known gap: the wipe runs in the background and nothing waits for it; the androidx docs say
-   deletion "may also delete data that is stored during deletion", so signing in again within that moment could lose
-   the new login (REVIEW.md 4.4 / §9.6 R1: wait for a `done` callback, as LLM Central does).
+   `Profiles.cleanUp`). The wipe runs in the background (the androidx docs: deletion "may also delete data that is
+   stored during deletion"), so **no page loads into a container while it is being emptied** (2026-11-19, REVIEW.md
+   R1): `Profiles.forget(account, done)` marks the container in `web/WipeGate` until both deletions (storage, cookies)
+   report back (or 10 s pass); `TabManager.show` meanwhile shows the "Unloaded" screen and `loadAfterWipe` loads the
+   account when the gate opens, if it was asked for and is still on screen. Matters for "Sign out" then open again,
+   and for "Remove the first account" then "Add", which reuses its (default) container.
 6. The Settings row shows the total cache size (`storage/AppCache.sizeBytes`, the same figure as Android's App info).
 
 **Not verified on a phone:** the effect of the 20 MB cap and the clearing (no device here). How to check on a phone:
@@ -572,7 +576,7 @@ after a release build, and look at the README in light and dark. Never edit `art
 
 | Layer | What | Command |
 |---|---|---|
-| Unit tests | 85 JUnit tests of the plain-Java rules (accounts, site, status, lock, colours/contrast, theme rebuild, downloads/data URLs, tabs LRU, start URLs, load errors, desktop mode, find, scripts, cache size, insets, badge) | `./gradlew test` |
+| Unit tests | 92 JUnit tests of the plain-Java rules (accounts, site, status, lock, colours/contrast, theme rebuild, downloads/data URLs, tabs LRU, start URLs, load errors, desktop mode, find, scripts, cache size, insets, badge, external links, wipe gate) | `./gradlew test` |
 | Lint | Android lint, warnings = errors | `./gradlew lint` |
 | Builds | debug + release (R8) | `./gradlew assembleDebug assembleRelease` |
 | Page checks | 6 Chromium checks of Settings, About and the zoom script with stand-in bridges (accounts flow, options, permissions = manifest, dark colours = `Themes.java`, 360 px width, About links) | `tools/page-checks` (README) |

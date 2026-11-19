@@ -4,6 +4,51 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-19 — Signing out: the account waits until its old data is really gone (R1)
+
+**What.** "Sign out" and "Remove" empty the account's container (cookies, saved site data, cache). Android does this in
+the background, and its documentation warns that data saved *while* it deletes may be deleted too. Until now the app
+didn't wait: if you signed out and opened the same account again at once, or removed your first account and added a
+new one (the new one moves into the first one's container), the fresh page could load into a container that was still
+being emptied. Now:
+
+- The app remembers which containers are being emptied (`web/WipeGate`, new).
+- `Profiles.forget` reports back when both deletions are finished (or after 10 seconds at the latest, so a missing
+  answer from WebView can never lock an account).
+- While that runs, opening the account shows the "Unloaded" screen instead of a page; as soon as the container is
+  empty, the page loads by itself.
+
+**Why.** Review finding 4.4 / recommendation R1, re-checked first (REVIEW.md §9.9): the race is real but narrow. The
+login itself is typed seconds later, after the deletion, so the realistic damage was a half-deleted first page load,
+not a lost login. Fixed because Google documents the behaviour and the fix is small and testable.
+
+**How it was found.** `MainActivity.forgetAccount` → `Profiles.forget` started the deletions with empty callbacks
+(`() -> { }`, `removeAllCookies(null)`); `AccountStore.add` reuses the id `main` (the default container) after it was
+removed. LLM Central's newest branch already waits the same way (`Profiles.wipe(profile, done)`).
+
+**Verified.** 7 new unit tests (`WipeGateTest`: closed while deleting, the account asked for meanwhile is loaded once,
+two overlapping deletions open only after the last, a time limit that fires after the answers changes nothing).
+Mutation checks: ignoring the overlap counter fails a test; letting the time limit run "done" a second time fails a
+test; both restored. `test lint assembleDebug assembleRelease`: 92 tests pass, 0 lint issues. **Not verified:** on a
+phone (how long WebView takes to delete; whether the "Unloaded" screen is noticeable at all).
+Limitation: if the screen is rebuilt during the deletion (a theme change in that same second), the account loads on the
+next tap instead of by itself.
+
+**Size.** Release APK (clean build) 185,382 → **186,990 bytes** (+1.6 KB).
+
+**What to test on your phone**
+
+1. Add a second account and sign in to it.
+2. Settings → Accounts → ⋮ on that account → **Sign out**, then at once tap **Open** on it. Expected: the "Unloaded"
+   screen shows for a moment (maybe too short to see), then the NextDNS login page loads. Sign in: it must stay signed in
+   after closing and reopening the app.
+3. With two accounts: remove the **first** one, then at once **Add account** and open the new one. Expected: as in step 2;
+   the new account starts signed out.
+4. Sign out of the account on screen and do nothing: it stays on "Unloaded. Tap to load" (it must not load by itself);
+   tap it: it loads.
+
+---
+
 ## 2026-11-19 — handoff.md brought up to date, shorter start prompt
 
 **What.** `handoff.md` had the old branch, the old APK size and "check the first CI run". Now it has today's state

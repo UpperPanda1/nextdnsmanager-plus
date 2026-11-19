@@ -248,7 +248,7 @@ another on the main thread (each `new WebView` costs several ms, so ~20 accounts
 
 | # | Change | Size | Risk |
 |---|---|---|---|
-| R1 | Port LLM Central's `Profiles.wipe(profile, done)` and keep the account's "Unloaded" placeholder from being tapped (or ignore the tap) until `done` runs | ~30 lines | low; phone test: sign out, immediately sign in again |
+| R1 | ✅ **Done 2026-11-19** (§9.9): `web/WipeGate` + `Profiles.forget(account, done)` + `TabManager.show`/`loadAfterWipe`; the account waits on the "Unloaded" screen until its container is empty, then loads | ~150 lines incl. docs | low; phone test in CHANGES.md |
 | R2 | ~~pause timers on `onStop`~~ **withdrawn** (§9.8): `pauseTimers` stops JavaScript timers but not network loading, so it would also stop the dashboard's own 5-minute idle switch-off and could keep a stream open *longer* | — | — |
 | R3 | Set `FLAG_SECURE` in `Windows.prepare` (before `show()`) instead of only in `fill`; also on the status dialog | 3 lines | very low |
 | R4 | In `Profiles.clearAllCaches`, clear closed profiles one per posted message (`Handler.post` chain) instead of a tight loop | ~15 lines | low |
@@ -282,3 +282,15 @@ The same holds for debug and release APKs: this is run-time behaviour, not a bui
 
 Side result: the Setup page reads `status` values `ok`, `mismatch` and `unconfigured` from `test.nextdns.io`, which
 confirms `ok` = "in use" (`Site.TEST_STATUS_IN_USE`); the `protocol` field was not seen in this code.
+
+### 9.9 R1 re-checked before fixing (2026-11-19)
+
+**R1 (sign-out deletion race): needed, narrow.** Re-traced: `forgetAccount` → `TabManager.unload` → `Profiles.forget`
+starts asynchronous deletions and returned at once. Two ways to open the same container during them: (1) "Sign out"
+then open that account (Settings → Open, the account menu, or the "Unloaded" screen); (2) "Remove" the account with
+id `main`, then "Add account": `AccountStore.add` reuses the id `main` and so WebView's default container. The androidx
+1.17.1 docs say the deletion "may also delete data that is stored during deletion". The login itself is typed by the
+user seconds later, after the deletion, so the realistic damage is a half-deleted first page load (cookies or storage
+it set), not a lost login. Fixed anyway because the gap is real, documented by Google, and the fix is small and
+testable. Limitation: a screen rebuilt *during* a wipe (theme change in that second) shows "Unloaded" and loads on the
+next tap instead of by itself.
