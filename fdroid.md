@@ -15,8 +15,8 @@ decision and a run of F-Droid's own tools are missing.
 |---|---|---|---|
 | 1 | Store texts and screenshots in `fastlane/metadata/android/en-US/` (§3.1) | this repo | icon only |
 | 2 | Decide the public name (trademark, §3.2) | owner | no |
-| 3 | Create a release key; GitHub secrets (§3.3) | owner | no |
-| 4 | Release workflow: unsigned build → sign with `apksigner` 34 → `apksigcopier compare` → GitHub release (§3.3) | this repo (`.github/workflows/release.yml`) | no |
+| 3 | Create a release key; GitHub secrets (§3.3, `RELEASE.md` §3) | owner | no |
+| 4 | Release workflow: unsigned build → sign with `apksigner` 34, v1 off → `apksigcopier compare` → GitHub release (§3.3) | this repo (`.github/workflows/release.yml`) | **added** 2026-11-19; scripts tested locally, not yet run on GitHub |
 | 5 | Tag `v0.1.0` on a clean commit; the workflow publishes the signed APK | owner | no |
 | 6 | Fork `gitlab.com/fdroid/fdroiddata`, add `metadata/org.rafee_m.nextdnsmanager.yml` (§3.5) | GitLab | no |
 | 7 | Run `fdroid lint`, `rewritemeta`, `build`, `scanner` on it locally (§3.4) | own computer | no |
@@ -83,20 +83,18 @@ name (**UNVERIFIED**).
 
 ### 3.3 Signing key and release workflow (blocks reproducible publishing)
 
-Nothing in `.github/workflows/` builds or signs a release. LLM Central's `release.yml` is the model
-(`UpperPanda1/assist`, branch `claude/confident-brahmagupta-9iiv9x`, `.github/workflows/release.yml` + `RELEASE.md`).
-What to copy:
+**Done (2026-11-19):** `.github/workflows/release.yml` and [`RELEASE.md`](RELEASE.md), ported from LLM Central's. How to
+use them: `RELEASE.md` §3–4. What they do, and what the port changed:
 
 1. Create a release key once (`keytool -genkeypair … -keyalg RSA -keysize 4096 -validity 10000`); back it up; keep it
    **outside** the repository (`*.jks`/`*.keystore` are git-ignored, except the already tracked debug key).
 2. GitHub secrets: keystore (base64), keystore password, key alias, key password.
-3. Workflow on a `v*` tag: `./gradlew assembleRelease` (unsigned), sign **with `apksigner` from build-tools 34.0.0**,
-   run `apksigcopier compare` (version 1.1.1) in the workflow, publish the APK on the GitHub release, print the signer's
-   SHA-256 (needed in 3.5).
-   - Why 34 (**verified in LLM Central's `RELEASE.md`**, table "Why signing is done this way", tested 2026-09-30 with the
-     same AGP 8.13.2 / Gradle 8.14.5): `apksigner` 34 passes `apksigcopier compare`; `apksigner` 35 fails ("CHUNKED_SHA512
-     digest mismatch"); Gradle's own signing fails ("APK Signing Block offset < central directory offset"). Not yet
-     re-tested for this app: the workflow's own `apksigcopier compare` step is that test.
+3. Workflow on a `v*` tag: `./gradlew assembleRelease` (unsigned), sign **with `apksigner` from build-tools 34.0.0 and
+   `--v1-signing-enabled false`**, run `apksigcopier compare` (1.1.1), publish `NextDNS-Manager-Plus-<version>.apk` on
+   the GitHub release, print the signer's SHA-256 (needed in 3.5).
+   - **Tested on this app's APK (2026-11-19):** 34 + v1 off → `apksigcopier compare` passes; 34 with default options →
+     fails ("CHUNKED_SHA512 digest mismatch", apksigner adds v1 JAR files); 35 + v1 off → fails. LLM Central's workflow
+     (34, v1 not switched off) passed for LLM Central but **would fail for this app**; the port adds the switch.
 4. **Do not pass `-PrepoUrl` in the release build.** F-Droid builds the tag without it, so the About links come from
    `gradle.properties`. A release built with any other value is a different APK (proven: §4) and F-Droid's check fails.
    If the repository moved, change `app.repoUrl` in `gradle.properties`, commit, then tag.
@@ -258,7 +256,7 @@ b/app/build/outputs/apk/release/app-release-unsigned.apk` (no output from `cmp` 
 | 1 | Name/trademark ("NextDNS") | reviewers can ask | decide in 3.2 before the first release |
 | 2 | No phone test yet | F-Droid does not test, but a broken first release hurts users | owner's phone checklist in `CHANGES.md` |
 | 3 | `-PrepoUrl` used in a release build | F-Droid's build would differ → not published | 3.3 step 4; the CI safeguard in §4 |
-| 4 | Signing path not yet run for this app | signature copying fails on any mismatch | the release workflow's own `apksigcopier compare` step; dry run with a throw-away key and tag |
+| 4 | Release workflow not yet run on GitHub | runner differences (SDK path, Python) | dry run with the test key first (`RELEASE.md` §4); the signing path itself passed `apksigcopier compare` locally |
 | 5 | Another OS / F-Droid's build server | not yet compared (JDK 17 and 21 are identical, §5) | `fdroid build` in §3.4 |
 | 6 | Committed binaries (wrapper jar, debug keystore) | scanner findings | run `fdroid scanner`; drop the debug keystore if asked |
 | 7 | App only useful with a NextDNS account | label `NonFreeNet`; reviewers may ask for screenshots | screenshots + honest description |

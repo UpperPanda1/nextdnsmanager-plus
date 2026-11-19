@@ -1,0 +1,1 @@
+First release. The NextDNS dashboard with several accounts signed in side by side (one container each), a connection-status icon, app lock, find in page, ping test, Private DNS shortcut, saving of 2FA recovery codes, desktop site, pinch to zoom, and a White/Black/Match-system theme. Several accounts need Android System WebView 119 or newer.

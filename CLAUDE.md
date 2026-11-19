@@ -194,6 +194,9 @@ Reuse **everything** except what names or depends on NextDNS. Recommended: Gradl
   Setup status re-check stops when idle (60 s) or hidden; the root-CA check runs only while visible and focused. So the
   app needs no `pauseTimers` (it would block the dashboard's own idle switch-off). Setup reads `test.nextdns.io`
   `status` = `ok` / `mismatch` / `unconfigured`.
+- Release signing [tested 2026-11-19, apksigcopier 1.1.1]: apksigner 34 + `--v1-signing-enabled false` passes
+  `apksigcopier compare`; 34 default (adds v1 JAR files) and 35 fail ("CHUNKED_SHA512 digest mismatch"). keytool
+  rejects `+` in a certificate name ("Incorrect AVA format"): write "Plus".
 - Not verifiable here: anything on a phone (WebView profiles, unlock sheet, MediaStore, status bar
   colours, the website's dark mode following the app). Live site checks work with curl/Playwright.
 
@@ -220,6 +223,8 @@ tools work).
 - [x] Review 1 fixes (`cc867de`) verified; review 2 docs, F-Droid plan corrected (REVIEW.md §9, 2026-11-19).
 - [ ] REVIEW.md §9.6 recommendations R1–R6 (owner to choose); decisions A–F in REVIEW.md §7.
 - [ ] Owner: phone test (CHANGES.md checklist).
-- [ ] README screenshots, store texts, release signing + release workflow (model: LLM Central `release.yml`).
+- [x] Release workflow + `RELEASE.md` + `BUILDING.md` (ported from LLM Central; signing needs apksigner 34 **and**
+      `--v1-signing-enabled false` for this app, tested 2026-11-19). First GitHub run (dry run) still to do.
+- [ ] README screenshots, store texts (`title`, `short_description`, `full_description`), release key + secrets (owner).
 - [ ] Translations.
 - [ ] AdGuard DNS Manager (§8, PROJECT.md §11).

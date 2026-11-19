@@ -19,7 +19,7 @@ local.properties
 *.keystore
 /keystore_backup/
 .temp
-# (A "*.yml" rule used to be here. It silently ignored every new workflow file, so
-# .github/workflows/release.yml was never committed: VERIFICATION.md A-1. Don't add it back.)
+# Never add a "*.yml" rule: in LLM Central it silently ignored every new workflow file, so its release.yml
+# was never committed.
 # Local execution ledgers of the superpowers plan skills (scratch, never committed)
 .superpowers/

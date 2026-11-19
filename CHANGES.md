@@ -4,6 +4,35 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-19 — Release workflow, RELEASE.md, BUILDING.md
+
+**What.** The app can now be released the way F-Droid wants, by pushing a tag:
+- **`.github/workflows/release.yml`** (copied from LLM Central and adapted): checks the version, tag, changelog and the
+  repository address shown in About; runs tests and lint; builds the unsigned APK; signs it; runs F-Droid's own
+  signature check; publishes `NextDNS-Manager-Plus-<version>.apk` on GitHub. "Run workflow" by hand = a dry run that
+  publishes nothing.
+- **`RELEASE.md`**: the beginner's guide: what is left before the first release, making the signing key, the four
+  GitHub secrets, each release step. **`BUILDING.md`**: how to build with Android Studio or the command line, and how to
+  check that a build is reproducible.
+- `fastlane/…/changelogs/1.txt`: the first release's notes (the workflow refuses to release without them).
+
+**Why it differs from LLM Central's.** Tested on this app's APK: F-Droid's check (`apksigcopier compare`) **fails** with
+LLM Central's exact signing command, because `apksigner` adds old-style "v1" signature files to this app. With v1
+switched off it **passes**; with build-tools 35 it fails either way. Copied unchanged, the first release would have been
+refused by F-Droid. Also fixed while testing: the test key's name may not contain `+` (`keytool` refuses it).
+
+**Verified.** The workflow's own scripts, taken from the YAML and run here: the check step in four cases (good tag passes;
+wrong tag, moved repository + tag fail; a fork's dry run only warns); signing with a test key, F-Droid's check and the
+summary all pass; the temporary key is deleted. YAML parses. **Not verified:** a run on GitHub (it needs the file on the
+default branch, a pull request, or a tag), a real key, F-Droid's build server.
+
+**Size.** App unchanged (no app code).
+
+**What to test:** nothing on the phone. On GitHub, after creating the key (RELEASE.md §3): Actions → Release → Run
+workflow → `test`, then `real`; read the fingerprint on the summary page.
+
+---
+
 ## 2026-11-19 — Second review: the fixes checked, F-Droid plan corrected (docs only)
 
 **What.** A second session checked commit `cc867de` (the entry below) claim by claim, compared the code with LLM

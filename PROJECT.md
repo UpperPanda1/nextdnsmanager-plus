@@ -274,6 +274,9 @@ Other files:
 | `tools/page-checks/` | Browser checks of the HTML pages (README inside) |
 | `.github/workflows/ci.yml` | CI |
 | `.github/workflows/icon.yml` | "App icon" workflow: regenerates the icon files from the SVG (by hand) or checks them (on push) |
+| `.github/workflows/release.yml` | Release: on a `v*` tag builds unsigned, signs with apksigner 34 (v1 off), runs F-Droid's `apksigcopier compare`, publishes; dry runs by hand or on PRs (`RELEASE.md`) |
+| `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` | Release notes / F-Droid "What's new" (≤ 500 characters; the release workflow requires it) |
+| `BUILDING.md`, `RELEASE.md`, `fdroid.md` | How to build; how to release and sign; the F-Droid submission |
 | `.claude/hooks/session-start.sh` | Sets up the Android SDK in Claude's cloud sandbox |
 
 ---
@@ -570,6 +573,7 @@ builds only, **never** a release (F-Droid builds without it: `fdroid.md` §4). A
 | Page checks | 6 Chromium checks of Settings, About and the zoom script with stand-in bridges (accounts flow, options, permissions = manifest, dark colours = `Themes.java`, 360 px width, About links) | `tools/page-checks` (README) |
 | CI | `.github/workflows/ci.yml`: job `android` (all of the above + APK artifact + size, `ubuntu-latest`) and job `pages` (page checks + screenshots, `ubuntu-24.04`: Playwright 1.56.1 does not support `ubuntu-latest` = 26.04) on every push and PR; passed for `cc867de` | GitHub Actions |
 | Icon check | `.github/workflows/icon.yml`: on a push touching the icon, regenerates the vector files from `artwork/icon.svg` and fails if they differ | GitHub Actions |
+| Release | `.github/workflows/release.yml`: version/tag/changelog/repository-address check, tests, lint, unsigned build, signing, F-Droid signature check; publishes only for a tag. Scripts tested locally 2026-11-19; not yet run on GitHub | GitHub Actions |
 
 Proven to catch mistakes (mutation checks, 2026-11-15): loosening the domain rule fails `SiteTest` and
 `TabManagerTest`; an undeclared permission fails `settings-permissions`; a renamed theme option fails
