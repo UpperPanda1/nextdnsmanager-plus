@@ -101,7 +101,7 @@ the same dry run with a test key.)
    4. runs F-Droid's check (`apksigcopier compare`);
    5. shows the APK's SHA-256, the unsigned APK's SHA-256 and the key fingerprint on the summary page;
    6. creates the release "NextDNS Manager+ 0.1.0" with `NextDNS-Manager-Plus-0.1.0.apk` (notes = changelog + SHA-256).
-7. Install that APK on your phone. It is a different app from the debug build (`org.rafee_m.nextdnsmanager` vs
+7. Install that APK on your phone. It is a different app from the debug build (`org.rafee_m.nextdnsmanagerplus` vs
    `….debug`), so both can be installed; accounts and settings don't move between them.
 
 **Why signing is done this way (tested on this app's APK, 2026-11-19).** F-Droid checks the developer's APK by copying
@@ -125,7 +125,7 @@ Never re-use a versionCode that users may have installed.
 
 Everything about the submission (checklist, recipe draft, anti-feature, reproducibility evidence, risks) is in
 [`fdroid.md`](fdroid.md). In short: after the first GitHub release, fork `gitlab.com/fdroid/fdroiddata`, add
-`metadata/org.rafee_m.nextdnsmanager.yml` with `Binaries:` pointing at `NextDNS-Manager-Plus-%v.apk` and
+`metadata/org.rafee_m.nextdnsmanagerplus.yml` with `Binaries:` pointing at `NextDNS-Manager-Plus-%v.apk` and
 `AllowedAPKSigningKeys:` = your fingerprint (§3), run `fdroid lint` / `fdroid build`, open the merge request. Later
 releases are picked up from the tags automatically.
 

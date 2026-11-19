@@ -20,7 +20,7 @@ release workflow). Updated only when the owner asks for a handoff.
 
 | | |
 |---|---|
-| App | **NextDNS Manager+** 0.1.0: the NextDNS dashboard with up to 20 isolated accounts, numbered account chip/menu, connection-status icon, app lock, find in page, ping test, Private DNS shortcut, 2FA-code downloads, White/Black/Match-system theme |
+| App | **NextDNS Manager+** 0.1.0 (applicationId `org.rafee_m.nextdnsmanagerplus`, renamed 2026-11-19 before the first release): the NextDNS dashboard with up to 20 isolated accounts, numbered account chip/menu, connection-status icon, app lock, find in page, ping test, Private DNS shortcut, 2FA-code downloads, White/Black/Match-system theme |
 | Repository | `UpperPanda1/nextdnsmanager-plus` (GitHub fork of `doubleangels/nextdnsmanager`; address read at build time from `gradle.properties` `app.repoUrl`) |
 | Branch | **`claude/nextdns-manager-plus-review-el0q2u`** = newest work. It continues the orphan branch `claude/gallant-bardeen-myrq5y` (no fork history). `main` still holds the old fork |
 | Build | `./gradlew --no-daemon test lint assembleDebug assembleRelease` passes: **92 unit tests, 0 lint issues**; page checks **6 of 6** (after R1, 2026-11-19) |
@@ -137,9 +137,10 @@ name decision (trademark), release key + 4 secrets, first dry run on GitHub, `v0
 1. **Owner:** phone test (CHANGES.md checklists); name decision; release key + secrets (RELEASE.md §3); store texts and
    screenshots; decisions A–F (REVIEW.md §7).
 2. **First GitHub run of `release.yml`:** a PR touching it, or "Run workflow" once it is on the default branch → `test`.
-3. **Code recommendations** (REVIEW.md §9.6; owner chooses): R1 ✅ and R3 ✅ done 2026-11-19 (phone tests in
-   CHANGES.md); open: R4 spread Clear cache over frames; R6 downloads through `ExternalLinks` (R5 is built into
-   `release.yml`; R2 withdrawn).
+3. **Review items: R1–R3 fixed** (R1 sign-out wait, R2 withdrawn, R3 status dialog secure; plus review 3's F1).
+   **Deferred to future releases (owner, 2026-11-19), not blockers for 0.1.0:** R4 (Clear cache spread over frames),
+   R5 (built into `release.yml` already), R6 (downloads through `ExternalLinks`), and REVIEW.md §10 F2–F6. Don't start
+   them unless the owner asks.
 4. Status icon (REVIEW.md 4.5): the dashboard's code confirms `status: ok` = in use; `mismatch` is a third answer the
    app doesn't distinguish yet.
 5. Translations; AdGuard DNS Manager (CLAUDE.md §8, PROJECT.md §11).

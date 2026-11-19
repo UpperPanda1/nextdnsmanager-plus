@@ -6,7 +6,7 @@
   <p>
     <a href="../../releases/latest"><picture><source media="(prefers-color-scheme: dark)" srcset="artwork/readme/get-github-dark.svg"><img alt="Get it on GitHub" src="artwork/readme/get-github-light.svg" height="60"></picture></a>
     <!-- Un-comment when the app is listed (fdroid.md), and put the public repository's address into the Obtainium link:
-    <a href="https://f-droid.org/packages/org.rafee_m.nextdnsmanager/"><picture><source media="(prefers-color-scheme: dark)" srcset="artwork/readme/get-fdroid-dark.svg"><img alt="Get it on F-Droid" src="artwork/readme/get-fdroid-light.svg" height="60"></picture></a>
+    <a href="https://f-droid.org/packages/org.rafee_m.nextdnsmanagerplus/"><picture><source media="(prefers-color-scheme: dark)" srcset="artwork/readme/get-fdroid-dark.svg"><img alt="Get it on F-Droid" src="artwork/readme/get-fdroid-light.svg" height="60"></picture></a>
     <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/OWNER/REPO"><picture><source media="(prefers-color-scheme: dark)" srcset="artwork/readme/get-obtainium-dark.svg"><img alt="Get it on Obtainium" src="artwork/readme/get-obtainium-light.svg" height="60"></picture></a>
     -->
   </p>

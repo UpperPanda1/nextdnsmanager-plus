@@ -1,6 +1,6 @@
 # F-Droid submission: what it entails
 
-Status of **NextDNS Manager+** (`org.rafee_m.nextdnsmanager`, version 0.1.0 / code 1) against F-Droid's rules, and
+Status of **NextDNS Manager+** (`org.rafee_m.nextdnsmanagerplus`, version 0.1.0 / code 1) against F-Droid's rules, and
 the work that remains. First written 2026-11-19 (review 1, `REVIEW.md` §1–8); corrected and re-verified the same day
 (review 2, `REVIEW.md` §9). Facts about F-Droid come from its documentation pages (links in §8); facts about this app
 come from the code and from commands that were run. Anything not checked is marked **UNVERIFIED**.
@@ -18,7 +18,7 @@ decision and a run of F-Droid's own tools are missing.
 | 3 | Create a release key; GitHub secrets (§3.3, `RELEASE.md` §3) | owner | no |
 | 4 | Release workflow: unsigned build → sign with `apksigner` 34, v1 off → `apksigcopier compare` → GitHub release (§3.3) | this repo (`.github/workflows/release.yml`) | **added** 2026-11-19; scripts tested locally, not yet run on GitHub |
 | 5 | Tag `v0.1.0` on a clean commit; the workflow publishes the signed APK | owner | no |
-| 6 | Fork `gitlab.com/fdroid/fdroiddata`, add `metadata/org.rafee_m.nextdnsmanager.yml` (§3.5) | GitLab | no |
+| 6 | Fork `gitlab.com/fdroid/fdroiddata`, add `metadata/org.rafee_m.nextdnsmanagerplus.yml` (§3.5) | GitLab | no |
 | 7 | Run `fdroid lint`, `rewritemeta`, `build`, `scanner` on it locally (§3.4) | own computer | no |
 | 8 | Open the merge request; answer the reviewers (name, anti-feature, screenshots) | GitLab | no |
 | 9 | After merge: every release = `versionCode` + 1, changelog file, tag (§3.6); F-Droid's bot picks it up | this repo | — |
@@ -40,7 +40,7 @@ decision and a run of F-Droid's own tools are missing.
 | FLOSS licence | GPL-3.0 (`LICENSE`); recipe field `License: GPL-3.0-only` | LICENSE present. The code derives from LLM Central, which descends from GPL code, so `-only` is the safe label (from `handoff.md` §7; not re-derived) |
 | Dependencies free, from a trusted Maven repo | one library: `androidx.webkit:webkit:1.17.1` (Apache-2.0), from Google's Maven | `app/build.gradle`, `settings.gradle` (`google()`, `mavenCentral()` only; `FAIL_ON_PROJECT_REPOS`) |
 | No tracking SDKs ("strictly forbidden") | none: no Firebase/Sentry/analytics; WebView's own metrics switched off | `AndroidManifest.xml` has `WebView.MetricsOptOut`; 3 permissions only. Review 2 grep for LLM Central's AI/provider/tracker code: nothing left |
-| Fork needs a **new application id** and "name, icon and string changes" | id `org.rafee_m.nextdnsmanager`; own icon from `artwork/icon.svg`; no file of the original is in the tree (claimed byte-by-byte in `PROJECT.md` §3) | id checked in the built APK. That it differs from the original's id: **UNVERIFIED** (the original's id was not looked up) |
+| Fork needs a **new application id** and "name, icon and string changes" | id `org.rafee_m.nextdnsmanagerplus`; own icon from `artwork/icon.svg`; no file of the original is in the tree (claimed byte-by-byte in `PROJECT.md` §3) | id checked in the built APK. That it differs from the original's id: **UNVERIFIED** (the original's id was not looked up) |
 | "A website wrapper should provide native features" | native top bar, several isolated accounts, app lock, status icon, find in page, downloads of `data:` files | Features in `PROJECT.md` §5 |
 | Build from source with open tools | Gradle wrapper pinned by SHA-256, AGP 8.13.2, Gradle 8.14.5, SDK 36 | `gradle/wrapper/gradle-wrapper.properties` |
 | Reproducible build | **four** release builds of commit `cc867de` (working tree + two fresh clones at different paths on JDK 21, one more clone on JDK 17) gave the **same** SHA-256 `4e287525…18554a` | review 2, §5 |
@@ -104,12 +104,12 @@ use them: `RELEASE.md` §3–4. What they do, and what the port changed:
 ```bash
 python3 -m venv ~/fdroid-venv && . ~/fdroid-venv/bin/activate
 pip install fdroidserver
-# in a clone of gitlab.com/fdroid/fdroiddata, with metadata/org.rafee_m.nextdnsmanager.yml written (3.5):
+# in a clone of gitlab.com/fdroid/fdroiddata, with metadata/org.rafee_m.nextdnsmanagerplus.yml written (3.5):
 fdroid readmeta
-fdroid rewritemeta org.rafee_m.nextdnsmanager
-fdroid lint org.rafee_m.nextdnsmanager
-fdroid build -v -l org.rafee_m.nextdnsmanager        # F-Droid's own build of the tagged source
-fdroid scanner org.rafee_m.nextdnsmanager            # looks for binaries / non-free or tracking libraries
+fdroid rewritemeta org.rafee_m.nextdnsmanagerplus
+fdroid lint org.rafee_m.nextdnsmanagerplus
+fdroid build -v -l org.rafee_m.nextdnsmanagerplus        # F-Droid's own build of the tagged source
+fdroid scanner org.rafee_m.nextdnsmanagerplus            # looks for binaries / non-free or tracking libraries
 ```
 
 Things the scanner/reviewer may touch in this tree (none verified for this app yet):
@@ -122,7 +122,7 @@ Things the scanner/reviewer may touch in this tree (none verified for this app y
 
 ### 3.5 The recipe (draft; **UNVERIFIED**: validate with `fdroid lint` and `fdroid build`)
 
-File `metadata/org.rafee_m.nextdnsmanager.yml` in your fork of `fdroiddata`:
+File `metadata/org.rafee_m.nextdnsmanagerplus.yml` in your fork of `fdroiddata`:
 
 ```yaml
 Categories:

@@ -28,7 +28,7 @@ android {
         // applicationId = the app's permanent identity on a phone and in app stores. Android treats a
         // different applicationId as a completely different app, so decide it before the first public
         // release and never change it afterwards (users would lose their data and updates).
-        applicationId = "org.rafee_m.nextdnsmanager"
+        applicationId = "org.rafee_m.nextdnsmanagerplus"
         // Android 10. Private DNS (what the status icon reports) exists since Android 9, the system
         // unlock prompt used by the app lock since Android 9/10, and current WebView versions (needed
         // for several accounts) are only published for Android 10 and newer. See PROJECT.md §8.

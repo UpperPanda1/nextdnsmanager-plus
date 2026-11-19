@@ -43,7 +43,7 @@ published APK can be rebuilt byte for byte.
    Package Details*): **Build-Tools 35.0.0**.
 4. **Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK** = 17 or newer.
 5. Run configuration **app** on a phone (USB debugging) or emulator → **Run ▶**. The debug build installs as
-   **"NextDNS Manager+ (Debug)"** (`org.rafee_m.nextdnsmanager.debug`), next to a released copy, never over it.
+   **"NextDNS Manager+ (Debug)"** (`org.rafee_m.nextdnsmanagerplus.debug`), next to a released copy, never over it.
 
 > **If Studio offers to upgrade the Android Gradle Plugin or Gradle, decline.** The versions are pinned on purpose:
 > F-Droid rebuilds the app from source and compares it byte for byte with the published APK.

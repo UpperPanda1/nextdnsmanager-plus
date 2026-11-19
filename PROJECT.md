@@ -59,7 +59,7 @@ top bar and extras a browser doesn't have:
 | Account menu tools | Desktop site, Reload, Hide status bar, Clear cache, unload an account. |
 | Ping test, Private DNS shortcut, downloads | From the original NextDNS Manager. |
 
-Package `org.dnsmanager.app` (code), application id `org.rafee_m.nextdnsmanager` (store identity), Java only, no UI
+Package `org.dnsmanager.app` (code), application id `org.rafee_m.nextdnsmanagerplus` (store identity), Java only, no UI
 library, one library in total (`androidx.webkit`). Release APK 186 KB (98 KB download).
 
 It is built so that an **AdGuard DNS Manager** can be made from the same code by changing one file
@@ -569,7 +569,7 @@ after a release build, and look at the README in light and dark. Never edit `art
 | Java | source/target 11; builds with JDK 17 or 21 | |
 | Libraries | `androidx.webkit:webkit:1.17.1`; tests: JUnit 4.13.2, `org.json` | |
 | Release | R8 shrinking + resource shrinking, no dependency metadata (reproducible) | |
-| applicationId | `org.rafee_m.nextdnsmanager` (debug: `.debug` suffix, "NextDNS Manager+ (Debug)") | decide before the first public release, then never change |
+| applicationId | `org.rafee_m.nextdnsmanagerplus` (debug: `.debug` suffix, "NextDNS Manager+ (Debug)") | decide before the first public release, then never change |
 | Lint | every warning fails the build; accepted ones in `app/lint.xml` with reasons | |
 | Repository address, author | `gradle.properties` `app.repoUrl`, `app.author` → `BuildConfig.REPO_URL` / `AUTHOR` | committed, not `git remote`: same APK from every clone (§7) |
 | Reproducible | same SHA-256 from different clone paths and from JDK 17 and 21 (review 2, 2026-11-19, `fdroid.md` §5) | F-Droid |

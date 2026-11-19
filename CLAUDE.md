@@ -27,7 +27,7 @@
 
 ## 2. The project in one paragraph
 
-**NextDNS Manager+** (code package `org.dnsmanager.app`, applicationId `org.rafee_m.nextdnsmanager`) wraps the NextDNS
+**NextDNS Manager+** (code package `org.dnsmanager.app`, applicationId `org.rafee_m.nextdnsmanagerplus`) wraps the NextDNS
 dashboard (`my.nextdns.io`) in WebViews with a native top bar: several isolated accounts (one androidx.webkit
 **Profile** per account), a numbered account chip and menu, find in page, app lock, a connection-status icon, ping
 test, Private DNS shortcut, downloads, desktop site, pinch to zoom, White/Black/Match-system theme. It was built
