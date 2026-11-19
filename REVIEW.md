@@ -12,7 +12,7 @@ F-Droid readiness. Compared against **LLM Central**: `UpperPanda1/assist`, newes
 | Check | Result |
 |---|---|
 | `./gradlew test lint assembleDebug assembleRelease` before changes | pass: 83 tests, 0 lint issues, release APK **185,258 B** (matches the docs) |
-| After the fixes below | pass: **85 tests**, 0 lint issues, release APK 185,382 B (not a clean-build figure), page checks **6 of 6** |
+| After the fixes below | pass: **85 tests**, 0 lint issues, release APK 185,382 B (confirmed as the clean-build figure by review 2, §9), page checks **6 of 6** |
 | Reproducible build | 3 builds (working tree + two fresh clones at different paths) → identical SHA-256 (JDK 21 only; see `fdroid.md` §5) |
 | Previous session's patch | **not in the tree and not in the upload** (only the notes). I re-checked every claim against the code (section 3) and redid the fixes that held up |
 
@@ -113,6 +113,7 @@ answer, so an explicit "unconfigured" never overrides a green Private DNS state.
   (`lint.xml` already says raise it only after a phone test).
 - **CI:** `ubuntu-latest` is unpinned (the pages job uses 24.04); action versions (`checkout@v7`, `setup-java@v6`,
   `upload-artifact@v7`) could not be verified by me and the first CI run is still unchecked (CLAUDE.md TODO).
+  *Review 2:* superseded — CI has run and passed for this commit; the runner split is deliberate (§9.2).
 - **`.gitignore`** has a stray `.zip` line (matches a file literally named `.zip`) and ignores `*.keystore` while
   `app/debug.keystore` is tracked (works because it was force-added; a future `git add` of a new keystore is ignored).
 - **Error text** told users to update WebView "from the Play Store": wrong for F-Droid users; reworded.
@@ -171,3 +172,94 @@ pinned.
 Everything on-device: lock-screen secure flag, Settings page look after the CSS clean-up, About links, Clear cache
 numbers, back key at targetSdk 36, `HttpCache` quota behaviour. Also: `Rafee-M/llm-central` (unreadable), `org.json:json:20260814`
 exists (it resolved in the build here, so it does exist on the mirror used), CI on GitHub, JDK 17 reproducibility.
+
+---
+
+## 9. Review 2 (2026-11-19): verification of commit `cc867de` and a second adversarial pass
+
+Done by a second session. Same rules: *verified* = run or read here; nothing was run on a phone. Code was **not**
+changed in review 2 (the owner asked for a review); only docs and one comment in `gradle.properties` were changed.
+
+### 9.1 Baseline, re-run
+
+| Check | Result |
+|---|---|
+| `./gradlew clean test lint assembleDebug assembleRelease` at `cc867de` | BUILD SUCCESSFUL; **85 tests**, 0 failures; lint "No issues found" |
+| Test count history | `@Test` count per commit: `5d7aa23` 83, `4fe69d6` 83, `cc867de` 85 — so "83 → 85" in §0 is right. CLAUDE.md §11 said the *first version* had 85 (wrong; fixed) |
+| Page checks | 6 of 6 |
+| Release APK (clean build) | **185,382 bytes**, SHA-256 `4e287525…18554a` |
+| Reproducible | identical hash from the working tree, two fresh clones at different paths (JDK 21) **and a clone built with JDK 17** (open point (a) of `fdroid.md` §5 is now closed) |
+| `-PrepoUrl` override | changes the APK (`58da7961…`); a hostile value (`https://evil.example/x"y`) stops the build — the validation works |
+| CI on GitHub | **has run**: run 6 (`cc867de`) passed both jobs. §4.7 / §6 "CI unrun" were already out of date |
+
+### 9.2 Review 1's claims, checked
+
+| Claim (section) | Verdict | Evidence |
+|---|---|---|
+| Newest LLM Central branch is `claude/confident-brahmagupta-9iiv9x` (header) | **right** | `git ls-remote`: three branches; that one's head is 2026-11-16 15:25; `laughing-johnson-7mbk6s` stops at 2026-11-14, `master` at 2026-11-14 |
+| 4.1 secure flag on Settings/About/Ping | **right, fixed**; small gap left | `Windows.fill` runs **after** `dialog.show()`, so the first frame(s) of a dialog are drawn before `FLAG_SECURE` is set. Not covered: the status `AlertDialog`, the account `PopupWindow`/`PopupMenu` and the website's own JS `alert`/`confirm` boxes (shows account names / page text). Recommendation R3 |
+| 4.2 `ExternalLinks` safe list | **right, fixed** | the three handlers use it; test + mutation check described. Nit: `downloads/Downloads.start` still builds its own `ACTION_VIEW` (safe: http(s) only), so "the one place" in its Javadoc is not literally true |
+| 4.3 quota: docs advise against `setQuotaBytes(getDefaultQuotaBytes())` | **right** (quote verified word for word in the androidx.webkit **1.17.1 sources jar**: "If you wish to use automatic quota management, call useDefaultQuota() instead of supplying the output of getDefaultQuotaBytes()", "The default quota may not be a stable size across sessions") | the same docs: a quota "will take immediate effect, persist across restarts"; values outside WebView's range are clamped. LLM Central still has the old `min(...)` (worth back-porting there) |
+| 4.4 wipe is fire-and-forget; a race is possible | **right, and now documented by Google**: `WebStorageCompat.deleteBrowsingData` Javadoc: "Deletion is not an atomic operation, so it may also delete data that is stored during deletion" | realistic trigger is narrow (the user must close Settings and tap the account within the deletion time). Recommendation R1 |
+| 4.5 status icon rules | right (not re-tested against a live "in use" answer) | — |
+| 4.7 `ubuntu-latest` "unpinned" | **misjudged**: deliberate | `ubuntu-latest` is now Ubuntu 26.04; App icon run 1 failed with "Playwright does not support chromium on ubuntu26.04-x64". The owner pinned the two Playwright jobs (`pages`, `icon`) to 24.04 and kept `android` on latest (commits `a5828dc`, `2e949e6`, `2e8a066`) |
+| `fdroid.md` hash `b8cc974e…` | **not reproducible**: it was a build of the uncommitted tree; the APK embeds the commit hash. Replaced with `4e287525…` for `cc867de` | `META-INF/version-control-info.textproto` read from the APK |
+| `fdroid.md` "use `-PrepoUrl=…github.repository` in the release workflow" | **risky advice, corrected** | F-Droid builds without `-P`; any difference = different APK (proven above) = failed reproducible-build check. `gradle.properties` comment said "CI can pass its own address that way": rewritten |
+| `fdroid.md` "build-tools 34, not 35" (was UNVERIFIED) | **verified at the source**: LLM Central `RELEASE.md` table (tested 2026-09-30, same AGP/Gradle): apksigner 34 passes `apksigcopier compare`, 35 fails "CHUNKED_SHA512 digest mismatch", Gradle signing fails | still to be re-run for this app by the release workflow itself |
+| Docs updated for the repo-URL feature | **incomplete**: PROJECT.md never mentioned `app.repoUrl` / `app.author` (no "how to change", no build-settings row) | fixed in review 2 |
+
+### 9.3 LLM Central reuse: what was taken, what was stripped
+
+Compared file by file with `UpperPanda1/assist` @ `b9567c9`. Taken and adapted: `account/` (Account, AccountStore —
+fully `synchronized`, `all()` returns a copy, needed because bridge calls arrive on WebView's JavaBridge thread —,
+AccountsBridge), `web/` (TabManager, TabLru, Profiles, DesktopMode, PageZoom, FindInPage, LoadErrors, Scripts,
+WebViewRecovery, DialogWebViewClient), `theme/` minus palettes, `ui/` (FindBar, SwitcherPopup, SettingsRestore,
+UnloadedPlaceholder, AboutWindow, NativeTheme), `storage/` (AppCache, StorageBridge). Stripped, and a grep for
+`duck|assistant|provider|chatgpt|gemini|palette|material you|tracker|llm` in `app/src` finds no code (only the app lock's
+unlock "prompt" and `android.provider.*` imports): assistant services, chat database, providers, sign-in helpers
+(`SignInHosts`, `SignInUserAgent`, `PopupWindows` — correctly kept back for AdGuard, CLAUDE.md §8), tracker/worker
+blocking, user scripts, backup/export of logins, request log, Material You palettes, intro window, microphone and file
+chooser. Nothing unneeded found.
+
+Not ported but worth it: `wipe(profile, done)` (R1). Deliberately different and better here: fixed quota (4.3); one
+`clearAllCaches` that also covers the default profile.
+
+### 9.4 Cache management: verdict
+
+**Structurally sound.** One profile per account; `LOAD_DEFAULT`; a fixed 20 MB HTTP quota set in `Profiles.attach` for
+every account tab including the default profile (WebView keeps it across restarts); `clearCache(true)` per open tab and
+a throw-away WebView per closed profile (cache only; cookies and storage untouched — Chromium `AwContents::ClearCache`,
+per review 1); removed accounts deleted or wiped-then-deleted at next start; size measured off the main thread without
+following symlinks. Weak points, all low: the wipe race (R1); `clearAllCaches` creates up to 19 WebViews one after
+another on the main thread (each `new WebView` costs several ms, so ~20 accounts can stall a frame or more: R4); the
+1.5 s re-measure (review 1, 4.6); the Ping window shares the `main` account's profile (decision B).
+
+### 9.5 UI performance and battery
+
+| Area | Finding |
+|---|---|
+| Hidden tabs | `setVisibility(GONE)` **and** `onPause()`; renderer priority `IMPORTANT`, waived when not visible; LRU cap 1–10 ("Accounts kept loaded"); `onTrimMemory` closes hidden tabs. Good |
+| Status icon | network callback only between `onStart`/`onStop`, 400 ms debounce, stale answers dropped by a generation counter, 6 s timeouts, 16 KB cap, no polling. Good. One small request per return to the app |
+| Background work | cache measuring, `data:` decoding (10 MB cap) and the status test run on one background thread; nothing heavy on the main thread except R4 |
+| **App in background** | neither this app nor LLM Central calls `WebView.onPause()` / `WebView.pauseTimers()` when the **whole app** goes to the background. Chromium does mark the page hidden when the window becomes invisible (timers throttled, no drawing), but open connections stay: a dashboard left on the **Logs** page (live log stream) can keep the radio busy until Android ends the process. Recommendation R2. **Unverified on a phone** (impact not measured) |
+| Favicons, console | favicon downloads off; console messages not logged. Good |
+
+### 9.6 Recommendations (not applied; ranked)
+
+| # | Change | Size | Risk |
+|---|---|---|---|
+| R1 | Port LLM Central's `Profiles.wipe(profile, done)` and keep the account's "Unloaded" placeholder from being tapped (or ignore the tap) until `done` runs | ~30 lines | low; phone test: sign out, immediately sign in again |
+| R2 | `MainActivity.onStop`: `currentWebView().onPause()` + `WebView.pauseTimers()`; `onStart`: `resumeTimers()` + `onResume()` of the current tab. `pauseTimers` is process-wide (Settings/About/Ping pages too), so it **must** be paired, or every WebView in the app freezes | ~10 lines | medium (pairing); phone test: leave on Logs, home, come back after minutes |
+| R3 | Set `FLAG_SECURE` in `Windows.prepare` (before `show()`) instead of only in `fill`; also on the status dialog | 3 lines | very low |
+| R4 | In `Profiles.clearAllCaches`, clear closed profiles one per posted message (`Handler.post` chain) instead of a tight loop | ~15 lines | low |
+| R5 | CI step: fail if `app.repoUrl` ≠ `https://github.com/${{ github.repository }}` on the main repository (skip on forks) | ~8 lines YAML | none for the APK |
+| R6 | Route `Downloads.start`'s web address through `ExternalLinks.open` | 5 lines | very low |
+| R7 | CLAUDE.md §7 says "Every WebView: `Profiles.attach` first"; the Settings/About/Ping and throw-away cache WebViews don't (they use the default profile on purpose). The rule should say "every account tab" — **docs fixed** | — | — |
+
+### 9.7 Docs fixed in review 2
+
+`fdroid.md` (hash, JDK 17 result, `-PrepoUrl` warning, CI facts, a submission step list, verified signing evidence),
+`gradle.properties` (comment), `PROJECT.md` (§6 quota rationale and wipe race, §7 how to change the repository
+address, §8 build settings, §9 CI runners), `CLAUDE.md` (§7 rule wording, §9 facts, §11 TODO), `CHANGES.md` (entry),
+this section. **`handoff.md` is stale** (branch `claude/gallant-bardeen-myrq5y`, APK 185,258 B, "check the first CI
+run") but is updated only when the owner asks for a handoff.

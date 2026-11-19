@@ -116,8 +116,9 @@ cd tools/page-checks && ln -sfn /opt/node-tools/node_modules node_modules && CHR
   `innerHTML`.
 - **Bridges** (`addJavascriptInterface`) only on the app's own local pages (Settings, About), never on the website.
   Validate every value from a page in Java. Pages name things (e.g. `openLink('service_terms')`), never send URLs.
-- Every WebView: `Profiles.attach` **before** any `loadUrl`/settings, and a client that handles
-  `onRenderProcessGone` (one unhandled renderer death kills the app).
+- Every **account tab** WebView: `Profiles.attach` **before** any `loadUrl`/settings. Every WebView (tabs, Settings,
+  About, Ping): a client that handles `onRenderProcessGone` (one unhandled renderer death kills the app). The local
+  pages and the throw-away cache WebView use the default profile on purpose.
 - Navigation decisions go through `Site.ownsHost` (exact host or real subdomain), never `contains`/`endsWith(domain)`.
 - No secrets, cookies, URLs with tokens or page content in logs.
 - Lint's `RequiresFeature` wants `WebViewFeature.isFeatureSupported(...)` in the same method as the call, as a
@@ -163,6 +164,14 @@ Reuse **everything** except what names or depends on NextDNS. Recommended: Gradl
   `setDeviceCredentialAllowed(true)` (combinations with `DEVICE_CREDENTIAL` aren't supported before API 30).
 - A `Dialog`'s dismiss listener is delivered later as a posted message: never `recreate()` from it when the screen is
   finishing (`ThemeRebuild.onSettingsClosed`).
+- `androidx.webkit` 1.17.1 sources (Google Maven `webkit-1.17.1-sources.jar`) [read 2026-11-19]: `HttpCache` —
+  don't pass `getDefaultQuotaBytes()` to `setQuotaBytes` (use `useDefaultQuota()`); a set quota persists across
+  restarts and is clamped. `WebStorageCompat.deleteBrowsingData` — "not an atomic operation, so it may also delete
+  data that is stored during deletion"; includes cache and cookies.
+- CI runners [2026-11-15/19]: `ubuntu-latest` = Ubuntu 26.04; Playwright 1.56.1 refuses it, so `pages` and `icon` are
+  pinned to `ubuntu-24.04`; `android` stays on latest (owner's choice). Run 6 (`cc867de`) passed.
+- Build: same release APK from different clone paths and from JDK 17 and JDK 21 (commit `cc867de`, 2026-11-19).
+  `-PrepoUrl` changes the APK: never use it for a release (F-Droid builds without it).
 - Not verifiable here: anything on a phone (WebView profiles, unlock sheet, MediaStore, status bar
   colours, the website's dark mode following the app). Live site checks work with curl/Playwright.
 
@@ -180,11 +189,14 @@ tools work).
 ## 11. TODO
 
 - [x] Planning: option 2 chosen; minSdk 29 (2026-11-14).
-- [x] First version on the orphan branch: all features in PROJECT.md §2.3; 85 unit tests, 0 lint issues, 6 page
+- [x] First version on the orphan branch: all features in PROJECT.md §2.3; 83 unit tests, 0 lint issues, 6 page
       checks, CI workflow (2026-11-15).
 - [x] Own launcher icon (nothing of the fork left); first commit (2026-11-15).
 - [x] Icon generated from `artwork/icon.svg` + App icon workflow; downloads simplified; pushed (2026-11-15).
-- [ ] Check the first CI and App icon runs on GitHub (`setup-node@v6`, the `pages` job and `icon.yml` are untried).
+- [x] First CI and App icon runs checked: failures were Playwright on Ubuntu 26.04 → jobs pinned to 24.04 by the
+      owner; CI green at `cc867de` (2026-11-19).
+- [x] Review 1 fixes (`cc867de`) verified; review 2 docs, F-Droid plan corrected (REVIEW.md §9, 2026-11-19).
+- [ ] REVIEW.md §9.6 recommendations R1–R6 (owner to choose); decisions A–F in REVIEW.md §7.
 - [ ] Owner: phone test (CHANGES.md checklist).
 - [ ] README screenshots, store texts, release signing + release workflow (model: LLM Central `release.yml`).
 - [ ] Translations.

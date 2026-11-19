@@ -1,13 +1,27 @@
 # F-Droid submission: what it entails
 
 Status of **NextDNS Manager+** (`org.rafee_m.nextdnsmanager`, version 0.1.0 / code 1) against F-Droid's rules, and
-the work that remains. Written 2026-11-19 after a review (see `REVIEW.md`). Facts about F-Droid come from its
-current documentation pages (links at the end), read on 2026-11-19; facts about this app come from the code and from
-commands run in that review. Anything not checked is marked **UNVERIFIED**.
+the work that remains. First written 2026-11-19 (review 1, `REVIEW.md` §1–8); corrected and re-verified the same day
+(review 2, `REVIEW.md` §9). Facts about F-Droid come from its documentation pages (links in §8); facts about this app
+come from the code and from commands that were run. Anything not checked is marked **UNVERIFIED**.
 
-**Short verdict:** the app is a good candidate technically (one free dependency, no tracking, reproducible build
-shown). It is **not ready to submit**: store texts, a release workflow with a signing key, a tag, a name decision
-and an F-Droid tool run are missing.
+**Short verdict:** technically a good candidate (one free dependency, no tracking, reproducible build proven at a
+commit). **Not ready to submit:** store texts, screenshots, a release key + release workflow, a `v0.1.0` tag, a name
+decision and a run of F-Droid's own tools are missing.
+
+## 0. The submission in one list (what "submitting" actually means)
+
+| # | Step | Who / where | Done? |
+|---|---|---|---|
+| 1 | Store texts and screenshots in `fastlane/metadata/android/en-US/` (§3.1) | this repo | icon only |
+| 2 | Decide the public name (trademark, §3.2) | owner | no |
+| 3 | Create a release key; GitHub secrets (§3.3) | owner | no |
+| 4 | Release workflow: unsigned build → sign with `apksigner` 34 → `apksigcopier compare` → GitHub release (§3.3) | this repo (`.github/workflows/release.yml`) | no |
+| 5 | Tag `v0.1.0` on a clean commit; the workflow publishes the signed APK | owner | no |
+| 6 | Fork `gitlab.com/fdroid/fdroiddata`, add `metadata/org.rafee_m.nextdnsmanager.yml` (§3.5) | GitLab | no |
+| 7 | Run `fdroid lint`, `rewritemeta`, `build`, `scanner` on it locally (§3.4) | own computer | no |
+| 8 | Open the merge request; answer the reviewers (name, anti-feature, screenshots) | GitLab | no |
+| 9 | After merge: every release = `versionCode` + 1, changelog file, tag (§3.6); F-Droid's bot picks it up | this repo | — |
 
 ## 1. How F-Droid works, in 6 lines
 
@@ -25,14 +39,15 @@ and an F-Droid tool run are missing.
 |---|---|---|
 | FLOSS licence | GPL-3.0 (`LICENSE`); recipe field `License: GPL-3.0-only` | LICENSE present. The code derives from LLM Central, which descends from GPL code, so `-only` is the safe label (from `handoff.md` §7; not re-derived) |
 | Dependencies free, from a trusted Maven repo | one library: `androidx.webkit:webkit:1.17.1` (Apache-2.0), from Google's Maven | `app/build.gradle`, `settings.gradle` (`google()`, `mavenCentral()` only; `FAIL_ON_PROJECT_REPOS`) |
-| No tracking SDKs ("strictly forbidden") | none: no Firebase/Sentry/analytics; WebView's own metrics switched off | `AndroidManifest.xml` has `WebView.MetricsOptOut`; 3 permissions only |
-| Fork needs a **new application id** and "name, icon and string changes" | id `org.rafee_m.nextdnsmanager`; own icon from `artwork/icon.svg`; no file of the original is in the tree (claimed byte-by-byte in `PROJECT.md` §3) | id checked in the built APK (`aapt2 dump badging`). That it differs from the original's id: **UNVERIFIED** (the original's id was not looked up) |
+| No tracking SDKs ("strictly forbidden") | none: no Firebase/Sentry/analytics; WebView's own metrics switched off | `AndroidManifest.xml` has `WebView.MetricsOptOut`; 3 permissions only. Review 2 grep for LLM Central's AI/provider/tracker code: nothing left |
+| Fork needs a **new application id** and "name, icon and string changes" | id `org.rafee_m.nextdnsmanager`; own icon from `artwork/icon.svg`; no file of the original is in the tree (claimed byte-by-byte in `PROJECT.md` §3) | id checked in the built APK. That it differs from the original's id: **UNVERIFIED** (the original's id was not looked up) |
 | "A website wrapper should provide native features" | native top bar, several isolated accounts, app lock, status icon, find in page, downloads of `data:` files | Features in `PROJECT.md` §5 |
-| Build from source with open tools | Gradle wrapper pinned by SHA-256, AGP 8.13.2, SDK 36 | `gradle/wrapper/gradle-wrapper.properties` |
-| Reproducible build | **three** release builds (in-tree, and two fresh clones at different paths) gave the **same SHA-256** `b8cc974e…c209` on JDK 21 | run 2026-11-19, see §5 |
+| Build from source with open tools | Gradle wrapper pinned by SHA-256, AGP 8.13.2, Gradle 8.14.5, SDK 36 | `gradle/wrapper/gradle-wrapper.properties` |
+| Reproducible build | **four** release builds of commit `cc867de` (working tree + two fresh clones at different paths on JDK 21, one more clone on JDK 17) gave the **same** SHA-256 `4e287525…18554a` | review 2, §5 |
 | `versionName`/`versionCode` readable | literal values in `app/build.gradle` (`0.1.0` / `1`) | the recipe's auto-update reads them from the tagged revision |
 | No signing secrets in the tree | release signing only if `local.properties` has `signing.*` (git-ignored); the committed debug key is a debug key | `app/build.gradle` |
 | Backup does not copy logins | `app_webview/` excluded in both backup rule files | `res/xml/*backup*.xml` |
+| CI builds the release on every push | `ci.yml` job `android` passed for `cc867de` (run 6, 2026-11-19) | GitHub Actions run list, read in review 2 |
 
 ## 3. What is still missing (in order)
 
@@ -53,8 +68,9 @@ fastlane/metadata/android/en-US/
 ```
 
 Put in the full description what F-Droid reviewers look for: it is an unofficial client for a proprietary service
-(NextDNS), it needs a NextDNS account, it sends nothing anywhere except to `nextdns.io`, and the one automatic
-request (`test.nextdns.io`, for the status icon) carries no account data (`settings.html` "Privacy" already says so).
+(NextDNS), it needs a NextDNS account, it sends nothing anywhere except to NextDNS's own addresses, and the one
+automatic request (`test.nextdns.io`, for the status icon, only while the app is on screen) carries no account data
+(`settings.html` "Privacy" already says so). Mention that several accounts need Android System WebView 119+.
 
 ### 3.2 Decide the name (trademark)
 
@@ -62,24 +78,28 @@ F-Droid's policy: apps "need to obtain necessary trademark and copyright permiss
 its owner; the app's own About/Disclaimer text already says it is not affiliated. A reviewer may still ask. Options:
 (a) keep "NextDNS Manager+" and be ready to answer, (b) a neutral name such as "DNS Manager+" with "for NextDNS" in
 the description. The applicationId and the code package are not affected by this choice; **decide before the first
-public release** because the applicationId is permanent. Also check whether the original *NextDNS Manager* is already
-listed on F-Droid under a similar name (**UNVERIFIED**).
+public release**. Also check whether the original *NextDNS Manager* is already listed on F-Droid under a similar
+name (**UNVERIFIED**).
 
 ### 3.3 Signing key and release workflow (blocks reproducible publishing)
 
 Nothing in `.github/workflows/` builds or signs a release. LLM Central's `release.yml` is the model
-(`UpperPanda1/assist`, file `.github/workflows/release.yml`, with its `RELEASE.md` §3-4). What to copy:
+(`UpperPanda1/assist`, branch `claude/confident-brahmagupta-9iiv9x`, `.github/workflows/release.yml` + `RELEASE.md`).
+What to copy:
 
 1. Create a release key once (`keytool -genkeypair … -keyalg RSA -keysize 4096 -validity 10000`); back it up; keep it
    **outside** the repository (`*.jks`/`*.keystore` are git-ignored, except the already tracked debug key).
 2. GitHub secrets: keystore (base64), keystore password, key alias, key password.
-3. Workflow on a `v*` tag: build `assembleRelease` (unsigned), sign **with `apksigner` from build-tools 34**, publish the
-   APK on the GitHub release, print the signer's SHA-256 (needed in 3.5).
-   - Why 34: LLM Central's notes say build-tools 35 and Gradle's own signing fail F-Droid's `apksigcopier compare`.
-     **UNVERIFIED here** (taken from `handoff.md` §7); confirm with F-Droid's tool in 3.4.
-4. Build with the repository's real address: `./gradlew assembleRelease -PrepoUrl=https://github.com/${{ github.repository }}`
-   (the About screen's links are built into the APK; see 4). Use the **same** value as in `gradle.properties`
-   unless the repository really moved, otherwise the APK F-Droid builds will not match yours.
+3. Workflow on a `v*` tag: `./gradlew assembleRelease` (unsigned), sign **with `apksigner` from build-tools 34.0.0**,
+   run `apksigcopier compare` (version 1.1.1) in the workflow, publish the APK on the GitHub release, print the signer's
+   SHA-256 (needed in 3.5).
+   - Why 34 (**verified in LLM Central's `RELEASE.md`**, table "Why signing is done this way", tested 2026-09-30 with the
+     same AGP 8.13.2 / Gradle 8.14.5): `apksigner` 34 passes `apksigcopier compare`; `apksigner` 35 fails ("CHUNKED_SHA512
+     digest mismatch"); Gradle's own signing fails ("APK Signing Block offset < central directory offset"). Not yet
+     re-tested for this app: the workflow's own `apksigcopier compare` step is that test.
+4. **Do not pass `-PrepoUrl` in the release build.** F-Droid builds the tag without it, so the About links come from
+   `gradle.properties`. A release built with any other value is a different APK (proven: §4) and F-Droid's check fails.
+   If the repository moved, change `app.repoUrl` in `gradle.properties`, commit, then tag.
 
 ### 3.4 Run F-Droid's own tools locally (finds surprises before a human does)
 
@@ -94,11 +114,13 @@ fdroid build -v -l org.rafee_m.nextdnsmanager        # F-Droid's own build of th
 fdroid scanner org.rafee_m.nextdnsmanager            # looks for binaries / non-free or tracking libraries
 ```
 
-Things the scanner/reviewer may touch in this tree (none verified yet):
-- `gradle/wrapper/gradle-wrapper.jar` (a committed binary; F-Droid normally accepts the official wrapper whose checksum it
-  knows, and `distributionSha256Sum` is pinned here);
-- `app/debug.keystore` (committed on purpose, password `android`, so debug builds on different computers install over
-  each other). It is not used for release. If F-Droid objects, remove it and let CI create the debug key.
+Things the scanner/reviewer may touch in this tree (none verified for this app yet):
+- `gradle/wrapper/gradle-wrapper.jar` (a committed binary). LLM Central's `RELEASE.md` reports that F-Droid's clean-up
+  removes the signing block from `build.gradle` and the Gradle wrapper, and that its build of the cleaned tree still
+  matched; this app's `build.gradle` has the same signing shape.
+- `app/debug.keystore` (committed on purpose, password `android`, so debug builds from different computers install over
+  each other). The release build never reads it (Gradle only opens a keystore when it signs). If F-Droid objects,
+  remove it and let CI create the debug key.
 
 ### 3.5 The recipe (draft; **UNVERIFIED**: validate with `fdroid lint` and `fdroid build`)
 
@@ -106,7 +128,7 @@ File `metadata/org.rafee_m.nextdnsmanager.yml` in your fork of `fdroiddata`:
 
 ```yaml
 Categories:
-  - Connectivity            # or Security / Internet: pick what F-Droid's current list offers
+  - Connectivity            # pick from F-Droid's current category list (UNVERIFIED that this name is on it)
 License: GPL-3.0-only
 AuthorName: Rafee-M
 WebSite: https://github.com/UpperPanda1/nextdnsmanager-plus
@@ -143,7 +165,10 @@ Notes on the choices:
 - **Not** `Tracking`: the app reports nothing; the status request goes to the service the user already chose.
 - **`Binaries` + `AllowedAPKSigningKeys`** = the reproducible-build route: F-Droid builds, compares with your signed
   APK (signature copying), and publishes yours. Without them F-Droid signs with its own key (users then cannot update
-  from a GitHub APK to the F-Droid one). The `Binaries` URL pattern must match your release asset name exactly.
+  from a GitHub APK to the F-Droid one). The `Binaries` URL pattern must match the release asset's name exactly, so
+  name the asset in the workflow (step 3.3) and the recipe together.
+- **The repository address appears five times** (`WebSite`, `SourceCode`, `IssueTracker`, `Repo`, `Binaries`): if the
+  repository moves, change them in the recipe **and** `app.repoUrl` in `gradle.properties` in the same release.
 - `subdir: app` because the Gradle module is `app`. The F-Droid build must not need `local.properties`; it does not
   (SDK path is supplied by F-Droid's build server).
 
@@ -152,65 +177,99 @@ Notes on the choices:
 1. Raise `versionCode` by 1 and set `versionName` in `app/build.gradle` (literal numbers, no computing).
 2. Write `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` (≤ 500 characters).
 3. `CHANGES.md` entry; CI green.
-4. Tag `v<versionName>` on a **clean** commit and push it; the release workflow builds, signs, publishes.
-5. F-Droid's bot finds the tag (`UpdateCheckMode: Tags`) and proposes the update; usually no human step.
+4. Check `app.repoUrl` in `gradle.properties` is the repository's current address (§4).
+5. Tag `v<versionName>` on a **clean** commit and push it; the release workflow builds, signs, checks, publishes.
+6. F-Droid's bot finds the tag (`UpdateCheckMode: Tags`) and proposes the update; usually no human step.
 
 ## 4. The repository address inside the APK
 
-The About screen's GitHub links and "Developed by" are **not** written in the page any more: they are read when the app
-is built.
+The About screen's GitHub links, the repository name and "Developed by" are **not** written in the page: they are read
+when the app is built.
 
 | What | Where | Rule |
 |---|---|---|
-| `app.repoUrl`, `app.author` | `gradle.properties` | the single source; also override with `-PrepoUrl=https://github.com/<owner>/<repo>` |
-| validation | `app/build.gradle` | build **fails** unless the address is `https://github.com/<owner>/<repo>` (a trailing `/` or `.git` is removed) |
-| use | `BuildConfig.REPO_URL` / `AUTHOR` → `AboutWindow.infoJson` → `assets/about.html` | the page re-checks the shape before using it for links |
+| `app.repoUrl`, `app.author` | `gradle.properties` | the single source of truth |
+| local override | `-PrepoUrl=https://github.com/<owner>/<repo>` | test builds only; **never** for a release (below) |
+| validation | `app/build.gradle` | build **fails** unless the address is `https://github.com/<owner>/<repo>` (a trailing `/` or `.git` is removed); author: letters, digits, `_ . -` and spaces, 1–60 characters. Proven in review 2: `-PrepoUrl='https://evil.example/x"y'` stops the build |
+| use | `BuildConfig.REPO_URL` / `AUTHOR` → `AboutWindow.infoJson` → `assets/about.html` | the page re-checks the shape before using it for links, and inserts text with `textContent` |
 
-It deliberately does **not** run `git remote get-url origin`: AGP already embeds the commit hash
-(`META-INF/version-control-info.textproto`), and a clone's remote differs between computers (HTTPS vs SSH, forks,
-local paths), which would make the same commit build to different APKs. A committed property keeps the build
-reproducible. **When the repository moves:** edit `app.repoUrl` in `gradle.properties` (one line), commit, tag. Other
-places that name the repository are static text: `README.md` (credits), `about.html` "Built on" links, the recipe in 3.5.
+**Why not `git remote get-url origin`:** AGP already embeds the commit hash (`META-INF/version-control-info.textproto`,
+contents seen in review 2: `revision: "cc867de…"`, `local_root_path: "$PROJECT_DIR"`), and a clone's remote differs
+between computers (HTTPS vs SSH, forks, local paths), which would make the same commit build to different APKs.
+
+**Why never `-PrepoUrl` for a release:** proven in review 2 — the same commit built with
+`-PrepoUrl=https://github.com/someone/moved-repo` gave SHA-256 `58da7961…` instead of `4e287525…`. F-Droid builds
+without the flag, so the two would not match.
+
+**When the repository moves:** edit `app.repoUrl` (one line), commit, tag. GitHub redirects a renamed or transferred
+repository, so links in already-installed versions keep working unless someone creates a new repository under the old
+name. Other places that name the repository are static text: `README.md` (credits), `about.html` "Built on" links
+(LLM Central, the original app), the recipe in 3.5. The check accepts **GitHub only**: a move to Codeberg or GitLab
+needs a change to the check in `app/build.gradle` and to the GitHub-specific links in `about.html` (`/issues/new/choose`,
+`/stargazers`).
+
+**Suggested safeguard (not added yet):** a CI step that fails when `app.repoUrl` differs from
+`https://github.com/${{ github.repository }}` on the main repository (and skips on forks). It turns "forgot to edit
+`gradle.properties` after a move" into a red ✗ instead of a wrong About screen, without changing the APK.
 
 ## 5. Reproducibility: what was proven and what was not
 
-Run on 2026-11-19 (JDK 21, Gradle 8.14.5, AGP 8.13.2, one machine): `git clone` of the same commit into two different
-directories, `./gradlew assembleRelease` in each, `sha256sum` of `app-release-unsigned.apk`:
+Review 2, 2026-11-19 (JDK 21, Gradle 8.14.5, AGP 8.13.2, one machine), commit **`cc867de`**: `./gradlew clean test
+lint assembleDebug assembleRelease` in the working tree, plus `git clone` into two different directories and
+`./gradlew assembleRelease` in each:
 
 ```
-b8cc974ed4314f68f4922c2c6f1561ecc3146d9c0dcde50b739b6529cc23c209   (clone A, shallow path)
-b8cc974ed4314f68f4922c2c6f1561ecc3146d9c0dcde50b739b6529cc23c209   (clone B, deeper path)
-b8cc974ed4314f68f4922c2c6f1561ecc3146d9c0dcde50b739b6529cc23c209   (the working tree, clean)
+4e28752540d869190ee6da540ca1251397e1d2b37565c3f336da0f196d18554a   working tree (clean build)
+4e28752540d869190ee6da540ca1251397e1d2b37565c3f336da0f196d18554a   clone A  scratchpad/repA
+4e28752540d869190ee6da540ca1251397e1d2b37565c3f336da0f196d18554a   clone B  scratchpad/deeper/path/repB
 ```
 
-The only VCS data in the APK is the commit hash (`revision: "…"`), so **every new commit changes the APK**: F-Droid must
-build exactly the tagged commit. A build from a **dirty** tree is not comparable.
+Release APK size 185,382 bytes (clean build).
 
-**Not proven (do these before the first release):** (a) JDK 17 (the CI uses 17, my run used 21): build with both and
-compare; (b) a different computer/OS; (c) F-Droid's own build server result (`fdroid build`); (d) that the
+*Correction:* review 1 recorded `b8cc974e…c209`. That was a build of the then-uncommitted tree; the APK embeds the
+commit hash, so nobody can reproduce that figure from any commit. The hash above is the one for `cc867de`.
+
+The only VCS data in the APK is the commit hash, so **every new commit changes the APK**: F-Droid must build exactly
+the tagged commit. A build from a **dirty** tree is not comparable.
+
+**JDK 17: proven.** A fourth fresh clone built with OpenJDK 17.0.21 (`JAVA_HOME` and `org.gradle.java.home` set to it)
+gave the **same** `4e287525…18554a`. This matches LLM Central's earlier result (same AGP and Gradle; `RELEASE.md`).
+
+**Not proven yet:** (b) a different computer/OS; (c) F-Droid's own build server result (`fdroid build`); (d) that the
 *signed* APK matches F-Droid's build under `apksigcopier compare`.
 
-Recipe to repeat (a): `git clone <repo> a && git clone <repo> b && (cd a && ./gradlew --no-daemon assembleRelease) &&
+Recipe to repeat: `git clone <repo> a && git clone <repo> b && (cd a && ./gradlew --no-daemon assembleRelease) &&
 (cd b && ./gradlew --no-daemon assembleRelease) && cmp a/app/build/outputs/apk/release/app-release-unsigned.apk
-b/app/build/outputs/apk/release/app-release-unsigned.apk` (no output from `cmp` = identical).
+b/app/build/outputs/apk/release/app-release-unsigned.apk` (no output from `cmp` = identical). Each clone needs a
+`local.properties` with `sdk.dir=…` (or `ANDROID_HOME` set).
 
-## 6. Risks, ranked
+## 6. CI facts that matter for a release workflow
+
+- `ubuntu-latest` is now **Ubuntu 26.04**. Playwright 1.56.1 refuses it ("Playwright does not support chromium on
+  ubuntu26.04-x64", App icon run 1, 2026-11-15). That is why the owner pinned the `pages` and `icon` jobs to
+  `ubuntu-24.04` and left `android` on `ubuntu-latest` (runs 2–4). A release workflow that only runs Gradle and
+  `apksigner` can use `ubuntu-latest`; anything with Playwright must stay on 24.04 until Playwright supports 26.04.
+- Run 6 (`cc867de`) passed both jobs.
+
+## 7. Risks, ranked
 
 | # | Risk | Why it matters | Action |
 |---|---|---|---|
-| 1 | Name/trademark ("NextDNS") | reviewers can ask; applicationId is permanent | decide in 3.2 before the first release |
+| 1 | Name/trademark ("NextDNS") | reviewers can ask | decide in 3.2 before the first release |
 | 2 | No phone test yet | F-Droid does not test, but a broken first release hurts users | owner's phone checklist in `CHANGES.md` |
-| 3 | Signing path untested (build-tools 34 claim) | signature copying fails on any mismatch | dry-run workflow with a throw-away key, then `apksigcopier compare` |
-| 4 | JDK 17 vs 21 reproducibility unknown | F-Droid's server may use a different JDK | §5 recipe |
-| 5 | Committed binaries (wrapper jar, debug keystore) | scanner findings | run `fdroid scanner`; drop the debug keystore if asked |
-| 6 | The About links are fixed at build time | a moved repo needs a new release | by design (4); document in the release routine |
-| 7 | App only useful with a NextDNS account | label `NonFreeNet`; reviewers may ask for a test account or screenshots | screenshots + honest description |
+| 3 | `-PrepoUrl` used in a release build | F-Droid's build would differ → not published | 3.3 step 4; the CI safeguard in §4 |
+| 4 | Signing path not yet run for this app | signature copying fails on any mismatch | the release workflow's own `apksigcopier compare` step; dry run with a throw-away key and tag |
+| 5 | Another OS / F-Droid's build server | not yet compared (JDK 17 and 21 are identical, §5) | `fdroid build` in §3.4 |
+| 6 | Committed binaries (wrapper jar, debug keystore) | scanner findings | run `fdroid scanner`; drop the debug keystore if asked |
+| 7 | App only useful with a NextDNS account | label `NonFreeNet`; reviewers may ask for screenshots | screenshots + honest description |
 
-## 7. Sources (read 2026-11-19)
+## 8. Sources
 
 - Inclusion Policy: https://f-droid.org/docs/Inclusion_Policy/
 - Anti-Features: https://f-droid.org/docs/Anti-Features/
 - Reproducible Builds: https://f-droid.org/docs/Reproducible_Builds/
 - Build Metadata Reference: https://f-droid.org/docs/Build_Metadata_Reference/
 - Descriptions, graphics, screenshots: https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/
-- LLM Central's tested release notes: `UpperPanda1/assist` → `RELEASE.md`, `.github/workflows/release.yml`
+  (the F-Droid pages were read by review 1 on 2026-11-19; review 2 did not re-read them)
+- LLM Central's tested release notes: `UpperPanda1/assist`, branch `claude/confident-brahmagupta-9iiv9x` (newest,
+  2026-11-16) → `RELEASE.md` (signing table, reproducibility row), `.github/workflows/release.yml` (read in review 2)

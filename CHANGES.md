@@ -4,6 +4,38 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-19 — Second review: the fixes checked, F-Droid plan corrected (docs only)
+
+**What.** A second session checked commit `cc867de` (the entry below) claim by claim, compared the code with LLM
+Central's newest branch, and reviewed cache, speed and battery. **No app code changed.** Results are in `REVIEW.md` §9.
+
+- **The fixes below hold up.** One small gap: Settings/About/Ping get the "secure" mark just *after* they appear
+  (REVIEW.md §9.6 R3).
+- **`fdroid.md` corrected.** Its build fingerprint (SHA-256) came from an uncommitted build that nobody can repeat;
+  it now has the fingerprint of the real commit. Its advice to pass `-PrepoUrl` in a release build was **dangerous**:
+  F-Droid builds without it, so the two APKs would differ and F-Droid would refuse to publish yours. That advice, and
+  the same hint in `gradle.properties`, now say "never in a release". A numbered "what submitting means" list was added.
+- **New facts written down:** CI has run and is green; `ubuntu-latest` is now Ubuntu 26.04, which Playwright doesn't
+  support (why two jobs are pinned to 24.04); the androidx docs confirm both the cache-cap change and the sign-out race.
+- **PROJECT.md** now explains how to change the repository address (it was missing). **CLAUDE.md**: the "Profiles.attach
+  first" rule now says it is for account tabs; first-version test count corrected (83).
+- **Six recommended code changes** (not made; your choice): REVIEW.md §9.6. The two that matter most: wait for the
+  sign-out deletion to finish (R1), and pause the pages when the app goes to the background, for battery (R2).
+
+**Why.** You asked for an adversarial check of the previous session's work, the docs and F-Droid readiness.
+
+**Verified.** `./gradlew clean test lint assembleDebug assembleRelease`: 85 tests pass, 0 lint issues; 6 of 6 page
+checks. The release APK is the **same** (SHA-256 `4e287525…18554a`) from the working tree, two fresh clones in
+different folders (JDK 21) and a fresh clone built with **JDK 17**. Building with `-PrepoUrl` gives a different APK;
+a malformed address stops the build. CI run 6 on GitHub passed. **Not verified:** anything on a phone.
+
+**Size.** Release APK (clean build) **185,382 bytes**, unchanged by this entry (docs only). This also confirms the figure
+in the entry below.
+
+**What to test on your phone:** nothing new (no app change). The checklist of the entry below still applies.
+
+---
+
 ## 2026-11-19 — Review fixes, repository address read at build time, F-Droid plan
 
 **What.** A review of the whole project (`REVIEW.md`) found a few real problems; the small, certain ones are fixed here.

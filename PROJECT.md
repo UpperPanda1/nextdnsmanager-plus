@@ -464,12 +464,16 @@ without bound; reloading must reuse the cache instead of storing copies.
 3. **A cap per account:** `Profiles.MAX_CACHE_BYTES` = 20 MB HTTP cache (WebView deletes the oldest entries itself;
    the dashboard needs about 1.5 MB). The code caches are half that each, so one account uses at most about 40 MB.
    Set in `Profiles.attach` for every profile, the default one included (needs WebView feature `HTTP_CACHE_MANAGER`;
-   older WebViews use their own limit).
+   older WebViews use their own limit). A fixed number, not `min(default, 20 MB)`: the androidx docs say the default
+   "may not be a stable size across sessions" and advise against feeding it back into `setQuotaBytes` (checked in the
+   1.17.1 sources). The quota is kept by WebView across restarts; values outside its range are clamped.
 4. **Clear cache clears all accounts** (`Profiles.clearAllCaches`): open tabs via `clearCache(true)` (Chromium: cache
    only, that WebView's profile); every other profile through a short-lived invisible WebView put into it. Called by
    both the account menu icon and Settings.
 5. **Removed accounts leave nothing:** the profile is deleted (or wiped if in use, then deleted at the next start by
-   `Profiles.cleanUp`).
+   `Profiles.cleanUp`). Known gap: the wipe runs in the background and nothing waits for it; the androidx docs say
+   deletion "may also delete data that is stored during deletion", so signing in again within that moment could lose
+   the new login (REVIEW.md 4.4 / §9.6 R1: wait for a `done` callback, as LLM Central does).
 6. The Settings row shows the total cache size (`storage/AppCache.sizeBytes`, the same figure as Android's App info).
 
 **Not verified on a phone:** the effect of the 20 MB cap and the clearing (no device here). How to check on a phone:
@@ -524,6 +528,12 @@ with `onclick="openSubView('xyz')"`.
 **Add a permission:** add it to `AndroidManifest.xml` **and** a row to Settings → Permissions
 (`#permissionList`, `data-permission="…"`); the page check fails if the two differ.
 
+**Change the repository address or author** (About screen links, repository name, "Developed by"): `app.repoUrl` /
+`app.author` in `gradle.properties`, then commit and tag. Read at build time (`app/build.gradle` → `BuildConfig` →
+`ui/AboutWindow` → `about.html`); the build fails on a malformed value; GitHub addresses only. `-PrepoUrl=…` is for test
+builds only, **never** a release (F-Droid builds without it: `fdroid.md` §4). Also change the static mentions in
+`README.md` and the F-Droid recipe.
+
 **Change the cache cap:** `Profiles.MAX_CACHE_BYTES`. **Change the lock grace time:** `LockRules.GRACE_MS`.
 **Change the account limit:** `AccountStore.MAX_ACCOUNTS`.
 
@@ -545,6 +555,8 @@ with `onclick="openSubView('xyz')"`.
 | Release | R8 shrinking + resource shrinking, no dependency metadata (reproducible) | |
 | applicationId | `org.rafee_m.nextdnsmanager` (debug: `.debug` suffix, "NextDNS Manager+ (Debug)") | decide before the first public release, then never change |
 | Lint | every warning fails the build; accepted ones in `app/lint.xml` with reasons | |
+| Repository address, author | `gradle.properties` `app.repoUrl`, `app.author` → `BuildConfig.REPO_URL` / `AUTHOR` | committed, not `git remote`: same APK from every clone (§7) |
+| Reproducible | same SHA-256 from different clone paths and from JDK 17 and 21 (review 2, 2026-11-19, `fdroid.md` §5) | F-Droid |
 
 ---
 
@@ -556,7 +568,7 @@ with `onclick="openSubView('xyz')"`.
 | Lint | Android lint, warnings = errors | `./gradlew lint` |
 | Builds | debug + release (R8) | `./gradlew assembleDebug assembleRelease` |
 | Page checks | 6 Chromium checks of Settings, About and the zoom script with stand-in bridges (accounts flow, options, permissions = manifest, dark colours = `Themes.java`, 360 px width, About links) | `tools/page-checks` (README) |
-| CI | `.github/workflows/ci.yml`: job `android` (all of the above + APK artifact + size) and job `pages` (page checks + screenshots) on every push and PR | GitHub Actions |
+| CI | `.github/workflows/ci.yml`: job `android` (all of the above + APK artifact + size, `ubuntu-latest`) and job `pages` (page checks + screenshots, `ubuntu-24.04`: Playwright 1.56.1 does not support `ubuntu-latest` = 26.04) on every push and PR; passed for `cc867de` | GitHub Actions |
 | Icon check | `.github/workflows/icon.yml`: on a push touching the icon, regenerates the vector files from `artwork/icon.svg` and fails if they differ | GitHub Actions |
 
 Proven to catch mistakes (mutation checks, 2026-11-15): loosening the domain rule fails `SiteTest` and
