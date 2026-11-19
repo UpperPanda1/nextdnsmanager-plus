@@ -74,10 +74,18 @@ jobs:
         with:
           node-version: 22
 
+      # --with-deps installs ~10 font/system packages from Ubuntu's mirror. That mirror sometimes answers 503 or
+      # refuses connections (runs 9 and 10, 2026-11-19), which failed the job without any fault in our code. So:
+      # refresh the package lists and retry with growing waits before giving up.
       - name: Install Playwright and Chromium
         run: |
           npm install
-          npx playwright install --with-deps chromium
+          for attempt in 1 2 3; do
+            sudo apt-get update -q && npx playwright install --with-deps chromium && exit 0
+            echo "::warning::Chromium install attempt $attempt failed (Ubuntu mirror?); retrying"
+            sleep $((attempt * 30))
+          done
+          exit 1
 
       - name: Page checks
         run: npm run check

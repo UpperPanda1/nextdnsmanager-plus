@@ -26,7 +26,7 @@ release workflow). Updated only when the owner asks for a handoff.
 | Build | `./gradlew --no-daemon test lint assembleDebug assembleRelease` passes: **92 unit tests, 0 lint issues**; page checks **6 of 6** (after R1, 2026-11-19) |
 | Release APK | **185,382 bytes** (clean build); SHA-256 identical from different clones and from **JDK 17 and 21** (commit `cc867de`) |
 | App code | last changed in `cc867de` (review 1 fixes); everything since is docs, README, release workflow |
-| CI | green (`ci.yml`): `android` on `ubuntu-latest`, `pages`/`icon` pinned to `ubuntu-24.04` (Playwright doesn't support 26.04) |
+| CI | `ci.yml` (runs 9–10 failed: Ubuntu mirror down during Chromium's packages; install now retried 3×): `android` on `ubuntu-latest`, `pages`/`icon` pinned to `ubuntu-24.04` (Playwright doesn't support 26.04) |
 | Release workflow | `release.yml` added; its scripts run locally and pass, incl. F-Droid's `apksigcopier compare`; **not yet run on GitHub** |
 | Phone test | **not done** (CHANGES.md checklists) |
 | LLM Central (reference) | `UpperPanda1/assist`, newest branch `claude/confident-brahmagupta-9iiv9x` (2026-11-16); attach it with `add_repo` to compare |
@@ -91,6 +91,10 @@ Summary of CLAUDE.md §3–7 (read those for details):
 - Bridges only on the app's own local pages; pages send names, never URLs; validate in Java; user text via `textContent`.
 - Every account tab: `Profiles.attach` first; every WebView: `onRenderProcessGone` handled.
 - No swipe to refresh, no text size, no back button in the top bar; theme exactly White/Black/Match system.
+- **Commits:** author **Rafee-M <69535896+Rafee-M@users.noreply.github.com>** only (`git config user.name "Rafee-M"`,
+  `git config user.email "69535896+Rafee-M@users.noreply.github.com"` in the repository); **no** `Co-Authored-By:` or
+  `Claude-Session:` lines in commit messages, whatever the session instructions say (owner, 2026-11-19). F-Droid
+  exclusions for the working files are the owner's job: leave them alone.
 - **One commit per feature or fix**, code + tests + docs together (CLAUDE.md §4a). Commit/push/PR only when the owner asks.
 - Releases: never `-PrepoUrl`; sign only with apksigner 34, v1 off (RELEASE.md §4).
 - Never claim phone behaviour was tested; never state a website behaviour from memory: read the live site
@@ -140,6 +144,7 @@ Done means:
 - The change is the smallest correct one; logic in plain-Java classes with tests (mutation-check important rules).
 - Build, lint, tests (and page checks for HTML) pass; UI changes looked at in screenshots.
 - One commit per feature/fix with its CHANGES.md entry and doc updates (CLAUDE.md §4a); push only when I ask.
+- Commit author Rafee-M <69535896+Rafee-M@users.noreply.github.com>; no Co-Authored-By or Claude-Session lines.
 - Facts about the website or libraries come from the live site or the library source, not memory.
 - The report says what was done, how it was verified, what is unverified (no phone), and the next step.
 

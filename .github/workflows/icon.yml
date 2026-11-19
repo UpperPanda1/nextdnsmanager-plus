@@ -56,7 +56,13 @@ jobs:
         working-directory: tools/icon
         run: |
           npm install --ignore-scripts
-          npx playwright install --with-deps chromium
+          # Retried: Ubuntu's mirror sometimes fails the font packages --with-deps needs (see ci.yml).
+          for attempt in 1 2 3; do
+            sudo apt-get update -q && npx playwright install --with-deps chromium && break
+            [ "$attempt" = 3 ] && exit 1
+            echo "::warning::Chromium install attempt $attempt failed (Ubuntu mirror?); retrying"
+            sleep $((attempt * 30))
+          done
 
       - name: Generate the icon files
         working-directory: tools/icon

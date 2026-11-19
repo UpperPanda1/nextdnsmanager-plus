@@ -4,6 +4,26 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-19 — CI: retry the Chromium install when Ubuntu's mirror fails
+
+**What.** CI runs 9 and 10 failed in the `pages` job, before any check ran. The app build, tests and lint (`android`
+job) passed both times. The failing step installs Chromium plus about ten font packages from Ubuntu's package
+mirror, which answered "503 Service Unavailable" (run 10) and refused connections (run 9). Now `ci.yml` and `icon.yml`
+refresh the package lists and try up to three times, waiting 30 s and then 60 s between tries.
+
+**Why.** A short outage at Ubuntu shouldn't turn the CI red when nothing in the project is wrong.
+
+**Verified.** Both job logs read (same cause). Both YAML files parse. The new step scripts were run locally with a
+stand-in installer: failing twice then working → step passes after 3 tries; never working → step fails after 3.
+**Not verified:** a real run on GitHub (the next push starts one).
+
+**Also:** commit rule written down (handoff.md §6, CLAUDE.md §4a): author Rafee-M only, no co-author or session
+lines; history rewritten to match.
+
+**Size.** App unchanged.
+
+---
+
 ## 2026-11-19 — App lock: nothing behind the cover is reachable with TalkBack or a keyboard (review 3, F1)
 
 **What.** While the app is locked, a cover is drawn over the screen. A cover hides things from your eyes and your
