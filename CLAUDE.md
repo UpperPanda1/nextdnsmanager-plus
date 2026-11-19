@@ -45,6 +45,8 @@ pushed (2026-11-15, orphan branch); **not yet tested on a phone**.
   features and design. Never claim success without evidence; separate verified facts from assumptions; end reports
   with what was done, how it was verified, limits, next step.
 - **Commit, push or open a PR only when the owner asks.**
+- **One commit per feature or fix** (owner, 2026-11-19). The first commit (`5d7aa23`) put the whole app into one
+  commit, which made it impossible to review, revert or bisect one feature. Rules: §4a.
 - Every change gets a `CHANGES.md` entry written for a beginner: what, why, how it was verified, size delta, and a
   numbered "What to test on your phone" list. `PROJECT.md` is updated when files, features or "how to change" change.
 - `handoff.md` is updated **when the owner asks** for a handoff.
@@ -60,6 +62,21 @@ pushed (2026-11-15, orphan branch); **not yet tested on a phone**.
    while…?"); fix what you find.
 5. Update CHANGES.md (new entry on top), PROJECT.md, this file (status, facts, TODO).
 6. Push / PR only when asked; then watch CI.
+
+### 4a. Commits: one per feature, each one complete
+
+- **One commit = one feature, one fix, or one doc topic.** Several requests in one session = several commits, in the
+  order they were done. Never one "everything" commit.
+- **Each commit is complete on its own:** the code, its tests, and the docs it changes (`CHANGES.md` entry, `PROJECT.md`,
+  `CLAUDE.md`) go in the **same** commit as the code. Every commit must pass `test lint assembleDebug assembleRelease`
+  (and the page checks if it touches HTML), so any commit can be checked out, reverted or bisected.
+- **Never mix** a refactor with a behaviour change, or a formatting change with either: separate commits.
+- **Stage by name** (`git add path/to/file`), never `git add -A` / `git add .`; read `git diff --cached --stat` before
+  committing.
+- **Message:** first line ≤ 72 characters, imperative ("Add …", "Fix …"); body: what, why, how verified, what was not
+  verified (no phone). End with the attribution lines the session instructions give.
+- **Too big to review?** If a commit needs more than ~400 changed lines of code (docs don't count), split it into
+  steps that each build and pass (e.g. "add class + tests", then "wire it into MainActivity").
 
 ## 5. Build and verify
 
