@@ -31,6 +31,31 @@ release workflow). Updated only when the owner asks for a handoff.
 | Phone test | **not done** (CHANGES.md checklists) |
 | LLM Central (reference) | `UpperPanda1/assist`, newest branch `claude/confident-brahmagupta-9iiv9x` (2026-11-16); attach it with `add_repo` to compare |
 
+
+**History rewritten 2026-11-19 (owner's request):** every commit now has Rafee-M as author and committer, and the
+`Co-Authored-By` / `Claude-Session` lines were removed. Files and dates are unchanged, but every commit ID changed. IDs
+quoted in older docs (CHANGES.md, REVIEW.md, fdroid.md: e.g. `cc867de`) are the **old** ones; their new IDs:
+
+| Old | New | Commit |
+|---|---|---|
+| `5d7aa23` | `21cac6f` |  Build NextDNS Manager+ on LLM Central's foundation |
+| `4fe69d6` | `38853fe` |  Generate the icon from artwork/icon.svg; send server downloads to the browser |
+| `a5828dc` | `d3eafbd` |  Update CI workflow to use Ubuntu 24.04 |
+| `2e949e6` | `e3a40ad` |  Update ci.yml |
+| `2e8a066` | `42da5ea` |  Update GitHub Actions runner to Ubuntu 24.04 |
+| `cc867de` | `fb2a583` |  Review fixes: build-time repo URL, safe external links, secure flag, cache cap |
+| `07aba71` | `45e929d` |  Second review: verify cc867de, correct F-Droid plan, update docs |
+| `5263986` | `af9b7a6` |  CLAUDE.md: require one commit per feature or fix |
+| `a734da0` | `c39a4df` |  Review: correct the background-battery finding, withdraw R2 |
+| `1bdb35f` | `c069cb4` |  Add release workflow, RELEASE.md and BUILDING.md |
+| `02483bb` | `6fbdbeb` |  README: banner, badges in NextDNS blue, features and WebView notes |
+| `fa81987` | `a90ca6d` |  handoff.md: current state, shorter start prompt |
+| `77ba046` | `bdbed8e` |  Wait for sign-out deletion before loading the account (R1) |
+| `d961c18` | `8b0856f` |  Mark the status dialog secure while the app lock is on (R3) |
+| `fcea707` | `b2ec147` |  Review 3: adversarial pass over screens, UI and core logic |
+| `3456eda` | `5373ce9` |  Hide the content under the lock cover from TalkBack and keyboard (F1) |
+| `314304a` | `483fe0b` |  CI: retry the Chromium install when Ubuntu's mirror fails |
+
 ## 2. The documents and what each is for
 
 | File | Read it for | Keep it updated when |
