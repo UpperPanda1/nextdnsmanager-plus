@@ -20,7 +20,8 @@ Central's newest branch, and reviewed cache, speed and battery. **No app code ch
 - **PROJECT.md** now explains how to change the repository address (it was missing). **CLAUDE.md**: the "Profiles.attach
   first" rule now says it is for account tabs; first-version test count corrected (83).
 - **Six recommended code changes** (not made; your choice): REVIEW.md §9.6. The two that matter most: wait for the
-  sign-out deletion to finish (R1), and pause the pages when the app goes to the background, for battery (R2).
+  sign-out deletion to finish (R1), and set the "secure" mark before a window appears (R3). (A battery change, R2, was
+  later withdrawn: REVIEW.md §9.8.)
 
 **Why.** You asked for an adversarial check of the previous session's work, the docs and F-Droid readiness.
 

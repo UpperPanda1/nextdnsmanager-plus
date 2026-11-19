@@ -189,6 +189,11 @@ Reuse **everything** except what names or depends on NextDNS. Recommended: Gradl
   pinned to `ubuntu-24.04`; `android` stays on latest (owner's choice). Run 6 (`cc867de`) passed.
 - Build: same release APK from different clone paths and from JDK 17 and JDK 21 (commit `cc867de`, 2026-11-19).
   `-PrepoUrl` changes the APK: never use it for a release (F-Droid builds without it).
+- Dashboard background behaviour [read in `main.7f28998e.js`, 2026-11-19]: Logs live stream = `EventSource` on
+  `/profiles/{id}/logs/stream`, off until the stream button is tapped, closed after 5 min without user activity; the
+  Setup status re-check stops when idle (60 s) or hidden; the root-CA check runs only while visible and focused. So the
+  app needs no `pauseTimers` (it would block the dashboard's own idle switch-off). Setup reads `test.nextdns.io`
+  `status` = `ok` / `mismatch` / `unconfigured`.
 - Not verifiable here: anything on a phone (WebView profiles, unlock sheet, MediaStore, status bar
   colours, the website's dark mode following the app). Live site checks work with curl/Playwright.
 

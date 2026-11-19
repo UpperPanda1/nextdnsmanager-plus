@@ -241,7 +241,7 @@ another on the main thread (each `new WebView` costs several ms, so ~20 accounts
 | Hidden tabs | `setVisibility(GONE)` **and** `onPause()`; renderer priority `IMPORTANT`, waived when not visible; LRU cap 1–10 ("Accounts kept loaded"); `onTrimMemory` closes hidden tabs. Good |
 | Status icon | network callback only between `onStart`/`onStop`, 400 ms debounce, stale answers dropped by a generation counter, 6 s timeouts, 16 KB cap, no polling. Good. One small request per return to the app |
 | Background work | cache measuring, `data:` decoding (10 MB cap) and the status test run on one background thread; nothing heavy on the main thread except R4 |
-| **App in background** | neither this app nor LLM Central calls `WebView.onPause()` / `WebView.pauseTimers()` when the **whole app** goes to the background. Chromium does mark the page hidden when the window becomes invisible (timers throttled, no drawing), but open connections stay: a dashboard left on the **Logs** page (live log stream) can keep the radio busy until Android ends the process. Recommendation R2. **Unverified on a phone** (impact not measured) |
+| **App in background** | *Corrected after reading the live dashboard code (`my.nextdns.io` `main.7f28998e.js`, 2026-11-19); see §9.8.* The dashboard limits itself: the Logs page's live stream (`EventSource` on `/profiles/{id}/logs/stream`) is **off until the user taps the stream button** and is switched off after **5 minutes without user activity**; the Setup status re-check stops after 60 s idle or when the page is hidden; the root-CA check runs only while the page is visible and focused. Worst case: a user who turned streaming on and pressed Home keeps one open stream for about 5 more minutes. R2 withdrawn |
 | Favicons, console | favicon downloads off; console messages not logged. Good |
 
 ### 9.6 Recommendations (not applied; ranked)
@@ -249,7 +249,7 @@ another on the main thread (each `new WebView` costs several ms, so ~20 accounts
 | # | Change | Size | Risk |
 |---|---|---|---|
 | R1 | Port LLM Central's `Profiles.wipe(profile, done)` and keep the account's "Unloaded" placeholder from being tapped (or ignore the tap) until `done` runs | ~30 lines | low; phone test: sign out, immediately sign in again |
-| R2 | `MainActivity.onStop`: `currentWebView().onPause()` + `WebView.pauseTimers()`; `onStart`: `resumeTimers()` + `onResume()` of the current tab. `pauseTimers` is process-wide (Settings/About/Ping pages too), so it **must** be paired, or every WebView in the app freezes | ~10 lines | medium (pairing); phone test: leave on Logs, home, come back after minutes |
+| R2 | ~~pause timers on `onStop`~~ **withdrawn** (§9.8): `pauseTimers` stops JavaScript timers but not network loading, so it would also stop the dashboard's own 5-minute idle switch-off and could keep a stream open *longer* | — | — |
 | R3 | Set `FLAG_SECURE` in `Windows.prepare` (before `show()`) instead of only in `fill`; also on the status dialog | 3 lines | very low |
 | R4 | In `Profiles.clearAllCaches`, clear closed profiles one per posted message (`Handler.post` chain) instead of a tight loop | ~15 lines | low |
 | R5 | CI step: fail if `app.repoUrl` ≠ `https://github.com/${{ github.repository }}` on the main repository (skip on forks) | ~8 lines YAML | none for the APK |
@@ -263,3 +263,23 @@ another on the main thread (each `new WebView` costs several ms, so ~20 accounts
 address, §8 build settings, §9 CI runners), `CLAUDE.md` (§7 rule wording, §9 facts, §11 TODO), `CHANGES.md` (entry),
 this section. **`handoff.md` is stale** (branch `claude/gallant-bardeen-myrq5y`, APK 185,258 B, "check the first CI
 run") but is updated only when the owner asks for a handoff.
+
+### 9.8 Correction: background battery use (2026-11-19, after the owner's question)
+
+Review 2 first said "a dashboard left on the Logs page can keep the radio busy until Android ends the process" and
+proposed R2. That came from memory, not from the site. Reading the dashboard's code changed it:
+
+| Dashboard part | What it does in the background | Evidence in `main.7f28998e.js` |
+|---|---|---|
+| Logs, live stream | off by default; on only after tapping the stream button; off after 5 min without activity | `new EventSource(…/logs/stream…)`; button toggles `p(…stream.id / null)`; `ww({timeout:3e5, onIdle: p(null)})` |
+| Setup page, "is this device using NextDNS" | re-checks only while active; stops after 60 s idle or when hidden | `ww({timeout:6e4, …})` + `visibilitychange` → `"visible" === document.visibilityState` |
+| Block-page root-CA check (every 60 s) | returns at once unless the page is visible **and** focused | `if ("visible" !== document.visibilityState \|\| !document.hasFocus()) return` |
+| "5 minutes ago" texts (every 60 s) | updates text only, no network | `setInterval(o, 6e4)` with `fromNow()` |
+
+What the app adds: a tab hidden **inside** the app gets `onPause()` (the page sees "hidden"); when the whole app goes to
+the background, Android hides the window and Chromium marks the page hidden too and throttles its timers. In the
+worst case (stream on, Home pressed), about 5 more minutes of one open connection, then the dashboard closes it itself.
+The same holds for debug and release APKs: this is run-time behaviour, not a build setting. **Not measured on a phone.**
+
+Side result: the Setup page reads `status` values `ok`, `mismatch` and `unconfigured` from `test.nextdns.io`, which
+confirms `ok` = "in use" (`Site.TEST_STATUS_IN_USE`); the `protocol` field was not seen in this code.
