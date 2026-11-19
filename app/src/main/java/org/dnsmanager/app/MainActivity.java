@@ -185,6 +185,7 @@ public class MainActivity extends Activity {
 
         // The lock cover goes on top of everything.
         lockScreen = new LockScreen(this, this::promptUnlock);
+        lockScreen.covers(findViewById(R.id.mainRoot)); // hidden from TalkBack and keyboard while locked
         ((ViewGroup) findViewById(R.id.screen)).addView(lockScreen.view(), fill);
 
         connectionStatus = new ConnectionStatus(this, findViewById(R.id.statusButton), BACKGROUND);
@@ -687,8 +688,8 @@ public class MainActivity extends Activity {
     // ------------------------------------------------------------ Settings and other windows
 
     private void openSettings(String section) {
-        if (settingsDialog != null && settingsDialog.isShowing()) {
-            return;
+        if (lockScreen.isVisible() || (settingsDialog != null && settingsDialog.isShowing())) {
+            return; // never while locked: Settings can sign out or remove accounts
         }
         settingsSection = SettingsRestore.safeSection(section);
         settingsDialog = SettingsWindow.open(settingsHost, BACKGROUND, settingsSection);

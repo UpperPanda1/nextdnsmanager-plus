@@ -4,6 +4,40 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-19 — App lock: nothing behind the cover is reachable with TalkBack or a keyboard (review 3, F1)
+
+**What.** While the app is locked, a cover is drawn over the screen. A cover hides things from your eyes and your
+fingers, but Android still lets **TalkBack** (the screen reader) and a **hardware keyboard** reach whatever is
+underneath. Someone holding your unlocked phone with TalkBack on, or with a keyboard attached, could have moved to
+the top bar behind the cover, opened ⋮ → Settings and signed out or removed accounts, or read the dashboard. Now,
+while locked:
+
+- everything under the cover is hidden from TalkBack and other accessibility services;
+- keyboard focus can't move there, and if the page had the keyboard, that focus is taken away;
+- Settings refuses to open (a second guard, in case anything else ever tries).
+
+When you unlock, all of it is restored. The cover's own Unlock button stays reachable for TalkBack and keyboards.
+
+**Why.** Found by the adversarial review of the screens (REVIEW.md §10, F1). While fixing it, the Android source showed
+that blocking focus doesn't remove focus a view already has, so the fix clears it explicitly.
+
+**Verified.** `test lint assembleDebug assembleRelease`: 92 tests pass, 0 lint issues; the compiled app calls
+`LockScreen.covers` from `onCreate`. No unit test: accessibility and focus are Android behaviour that can't run on the
+computer without an extra test library (the project allows none). **Not verified:** on a phone.
+
+**Size.** Release APK (clean build) 187,098 → **187,302 bytes** (+204 bytes).
+
+**What to test on your phone**
+
+1. Settings → turn **App lock** on. Leave the app for more than a minute, come back: the cover shows.
+2. Turn on **TalkBack** (Settings → Accessibility). Swipe right repeatedly on the cover. Expected: TalkBack reads only
+   "Locked" and the "Unlock" button, never the account chip, the ⋮ button or dashboard text.
+3. Unlock: TalkBack can reach the top bar and the page again. Turn TalkBack off.
+4. Optional, with a Bluetooth/USB keyboard: on the cover, press Tab and arrow keys, then Enter. Expected: only Unlock
+   reacts; typing never reaches the page.
+
+---
+
 ## 2026-11-19 — App lock: the status dialog is hidden from screenshots too (R3)
 
 **What.** With the app lock on, the app is "secure": screenshots and screen recordings show it blank. Each dialog is a

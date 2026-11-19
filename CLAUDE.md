@@ -197,6 +197,10 @@ Reuse **everything** except what names or depends on NextDNS. Recommended: Gradl
 - Release signing [tested 2026-11-19, apksigcopier 1.1.1]: apksigner 34 + `--v1-signing-enabled false` passes
   `apksigcopier compare`; 34 default (adds v1 JAR files) and 35 fail ("CHUNKED_SHA512 digest mismatch"). keytool
   rejects `+` in a certificate name ("Incorrect AVA format"): write "Plus".
+- A view drawn over others hides them only from eyes and touches: TalkBack still reaches (and presses) covered
+  views, and keyboard focus still moves to them. Hide with `IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS` +
+  `FOCUS_BLOCK_DESCENDANTS`, and clear existing focus yourself: AOSP `ViewGroup.setDescendantFocusability` only sets a
+  flag [read 2026-11-19]; `requestFocus` on a button that isn't focusable-in-touch-mode does nothing in touch mode.
 - Not verifiable here: anything on a phone (WebView profiles, unlock sheet, MediaStore, status bar
   colours, the website's dark mode following the app). Live site checks work with curl/Playwright.
 
@@ -223,7 +227,8 @@ tools work).
 - [x] Review 1 fixes (`cc867de`) verified; review 2 docs, F-Droid plan corrected (REVIEW.md §9, 2026-11-19).
 - [x] R1 (wait for the sign-out deletion, `web/WipeGate`) and R3 (status dialog secure) done 2026-11-19, 92 tests;
       phone tests in CHANGES.md.
-- [ ] REVIEW.md §9.6 R4, R6 (owner to choose); decisions A–F in REVIEW.md §7.
+- [x] Review 3 (REVIEW.md §10, 2026-11-19): F1 app-lock bypass via TalkBack/keyboard fixed.
+- [ ] REVIEW.md §9.6 R4, R6 and §10 F2–F6 (owner to choose); decisions A–F in REVIEW.md §7.
 - [ ] Owner: phone test (CHANGES.md checklist).
 - [x] Release workflow + `RELEASE.md` + `BUILDING.md` (ported from LLM Central; signing needs apksigner 34 **and**
       `--v1-signing-enabled false` for this app, tested 2026-11-19). First GitHub run (dry run) still to do.

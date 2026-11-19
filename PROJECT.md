@@ -375,6 +375,8 @@ What each tap does is in `MainActivity.switcherHost`.
   becomes "secure": blank in recent apps, no screenshots. Every dialog is its own window and gets the mark too
   (`ui/Windows.setSecure`: Settings, About, Ping test via `Windows.fill`; the status dialog in `showStatusDialog`), and
   `applySecureFlag` updates open dialogs when the lock is switched; pop-up menus inherit it from the main window.
+  While the cover shows, the content under it (`mainRoot`) is also hidden from accessibility services and keyboard
+  focus (`ui/LockScreen.covers`; a cover only hides from eyes and fingers), and `openSettings` refuses to open.
 - **When** (`lock/LockRules`): at a fresh start, and after more than **1 minute** out of sight. A quick switch to
   another app doesn't ask again.
 - **Switching it on or off** needs the phone's unlock first (nobody locks themselves out; only the owner turns it
