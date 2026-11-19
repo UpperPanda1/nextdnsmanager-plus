@@ -1,7 +1,7 @@
 # Handoff — start here
 
-Everything a new session needs to get going, plus a ready prompt (§10). Updated 2026-11-15. The owner updates this
-file only on request.
+Everything a new session needs to get going, plus a ready prompt (§10). Updated **2026-11-19** (review 2, README,
+release workflow). Updated only when the owner asks for a handoff.
 
 ## Contents
 
@@ -9,9 +9,9 @@ file only on request.
 2. [The documents and what each is for](#2-the-documents-and-what-each-is-for)
 3. [Where things are](#3-where-things-are)
 4. [Set up, build, test, lint](#4-set-up-build-test-lint)
-5. [CI](#5-ci)
+5. [CI and releases](#5-ci-and-releases)
 6. [Rules that must not be broken](#6-rules-that-must-not-be-broken)
-7. [F-Droid considerations](#7-f-droid-considerations)
+7. [F-Droid status](#7-f-droid-status)
 8. [Open tasks](#8-open-tasks)
 9. [Known limitations](#9-known-limitations)
 10. [Prompt for a new session](#10-prompt-for-a-new-session)
@@ -20,208 +20,128 @@ file only on request.
 
 | | |
 |---|---|
-| App | **NextDNS Manager+**: the NextDNS dashboard with several accounts, numbered account chip/menu, find in page, app lock, connection status, ping test, downloads, White/Black/Match-system theme |
-| Repository | `UpperPanda1/nextdnsmanager-plus` (GitHub fork of `doubleangels/nextdnsmanager`) |
-| Branch | `claude/gallant-bardeen-myrq5y`: an **orphan** branch. Its history starts with our first commit; nothing of the fork's history or files is in it (checked byte by byte). `main` still holds the old fork. |
-| Build | `./gradlew --no-daemon test lint assembleDebug assembleRelease` passes: **85 unit tests, 0 lint issues** |
-| Page checks | **6 of 6** pass |
-| Release APK | **185,258 bytes** (clean build), 98.2 KB download |
-| Phone test | **not done yet**: 20-step checklist in CHANGES.md (entry "First version") + 2 icon steps |
-| Commits | starts with a root commit (no parent); pushed to `origin` 2026-11-15 |
-| CI | `.github/workflows/ci.yml`; first run on GitHub happens at the first push: check it |
+| App | **NextDNS Manager+** 0.1.0: the NextDNS dashboard with up to 20 isolated accounts, numbered account chip/menu, connection-status icon, app lock, find in page, ping test, Private DNS shortcut, 2FA-code downloads, White/Black/Match-system theme |
+| Repository | `UpperPanda1/nextdnsmanager-plus` (GitHub fork of `doubleangels/nextdnsmanager`; address read at build time from `gradle.properties` `app.repoUrl`) |
+| Branch | **`claude/nextdns-manager-plus-review-el0q2u`** = newest work. It continues the orphan branch `claude/gallant-bardeen-myrq5y` (no fork history). `main` still holds the old fork |
+| Build | `./gradlew --no-daemon test lint assembleDebug assembleRelease` passes: **85 unit tests, 0 lint issues**; page checks **6 of 6** |
+| Release APK | **185,382 bytes** (clean build); SHA-256 identical from different clones and from **JDK 17 and 21** (commit `cc867de`) |
+| App code | last changed in `cc867de` (review 1 fixes); everything since is docs, README, release workflow |
+| CI | green (`ci.yml`): `android` on `ubuntu-latest`, `pages`/`icon` pinned to `ubuntu-24.04` (Playwright doesn't support 26.04) |
+| Release workflow | `release.yml` added; its scripts run locally and pass, incl. F-Droid's `apksigcopier compare`; **not yet run on GitHub** |
+| Phone test | **not done** (CHANGES.md checklists) |
+| LLM Central (reference) | `UpperPanda1/assist`, newest branch `claude/confident-brahmagupta-9iiv9x` (2026-11-16); attach it with `add_repo` to compare |
 
 ## 2. The documents and what each is for
 
 | File | Read it for | Keep it updated when |
 |---|---|---|
 | `handoff.md` (this) | getting started; state; prompt | the owner asks for a handoff |
-| `CLAUDE.md` | working rules, commands, hard constraints, verified facts, AdGuard reuse table, TODO | rules, facts or status change |
-| `PROJECT.md` | **the map**: planning decisions (§2), what was reused (§3), architecture and file map (§4), every feature (§5), cache rules (§6), **how to change things** (§7), versions (§8), tests (§9), limitations (§10), AdGuard plan (§11) | files, features or "how to change" change |
-| `CHANGES.md` | what each session changed, how it was verified, sizes, phone-test steps | every change (new entry on top) |
-| `README.md` | the public description | features change |
-| `tools/page-checks/README.md` | what each page check proves, how to run them | a check is added |
+| `CLAUDE.md` | working rules (§3–4a: one commit per feature), commands, hard constraints, verified facts, TODO. **Loaded automatically** in Claude Code | rules, facts or status change |
+| `PROJECT.md` | **the map**: decisions (§2), reuse (§3), file map (§4.3), features (§5), cache (§6), **how to change things** (§7), versions (§8), tests/CI (§9), limitations (§10), AdGuard (§11) | files, features or "how to change" change |
+| `CHANGES.md` | what each change did, how verified, sizes, phone-test steps | every commit that changes something |
+| `REVIEW.md` | review 1 (§1–8) and review 2 (§9): findings, recommendations R1–R6, open decisions A–F | a finding is fixed or decided |
+| `README.md` | the public page (badges from `tools/readme-badges`) | features change |
+| `BUILDING.md` / `RELEASE.md` / `fdroid.md` | build from source / sign and publish / F-Droid submission | build, release or F-Droid facts change |
 
 ## 3. Where things are
 
 ```
-app/
-  build.gradle            versions, minSdk 29, lint = warnings are errors, signing (debug key committed)
-  lint.xml                the lint warnings accepted on purpose, each with its reason
-  proguard-rules.pro      R8 rules (the default file keeps @JavascriptInterface methods)
-  src/main/
-    AndroidManifest.xml   3 permissions (INTERNET, ACCESS_NETWORK_STATE, USE_BIOMETRIC), one activity
-    java/org/dnsmanager/app/
-      MainActivity.java   the one screen: wiring only (top bar, menus, tabs set-up, Settings host, lock flow)
-      Prefs.java          the settings file
-      site/Site.java      EVERYTHING about NextDNS (addresses, domains, test format, legal links)
-      account/            account list + rules (AccountStore), Settings bridge (AccountsBridge)
-      web/                tabs (TabManager, TabLru), profiles + cache (Profiles), desktop site, pinch zoom,
-                          find rules, load errors, crash recovery, script loader, dialog client
-      theme/              colours (Themes = all colours), Scheme, ThemeManager, ThemeRebuild, insets
-      ui/                 account menu, badge, Settings/About/Ping windows, lock cover, find bar, placeholders
-      lock/               app lock (AppLock) + rules (LockRules)
-      status/             connection status icon (ConnectionStatus) + rules (StatusRules)
-      downloads/          2FA recovery codes (data: files) to Downloads; other files → browser
-      storage/            cache size + Settings bridge
-    assets/
-      settings.html       the Settings screen (HTML/CSS/JS in one file)
-      about.html          the About screen
-      js/                 scripts added to the dashboard (zoom, desktop, find highlight)
-      lib/reorder.js      drag-to-reorder
-    res/                  layouts (activity_main, top_bar), strings, vector icons, launcher icon, backup rules
-  src/test/java/…         unit tests (same packages), MapPrefs = settings stand-in
-artwork/icon.svg          THE APP ICON: edit this, then run Actions → App icon (PROJECT.md §7)
-tools/icon/               icon generator (artwork/icon.svg → launcher + store icon files)
-fastlane/metadata/        store icon (generated); store texts go here later (§7 of this file)
-tools/page-checks/        Chromium checks of the HTML pages (README inside)
-.github/workflows/        ci.yml (build/test/lint/page checks), icon.yml (App icon)
+app/build.gradle          versions, minSdk 29, lint = errors, repoUrl/author → BuildConfig, signing (debug key committed)
+gradle.properties         app.repoUrl, app.author (About screen); never override with -P in a release
+app/src/main/java/org/dnsmanager/app/
+  MainActivity.java       wiring only      site/Site.java   EVERYTHING about NextDNS
+  account/ web/ theme/ ui/ lock/ status/ downloads/ storage/   (file map: PROJECT.md §4.3)
+app/src/main/assets/      settings.html, about.html, js/ (scripts for the dashboard), lib/reorder.js
+artwork/icon.svg          THE app icon (→ tools/icon);  artwork/readme/  generated README banner + badges
+fastlane/metadata/        store icon, changelogs/<versionCode>.txt; store texts still to write
+tools/                    page-checks/ (Chromium checks), icon/, readme-badges/
+.github/workflows/        ci.yml, icon.yml, release.yml
 .claude/hooks/            cloud-session set-up (Android SDK, Maven mirror)
 ```
 
-The full table of every file, what it does and which test covers it: **PROJECT.md §4.3**. How to change texts,
-colours, settings, menu items, permissions, scripts, limits: **PROJECT.md §7**.
-
 ## 4. Set up, build, test, lint
 
-**Cloud session (Claude):** `.claude/hooks/session-start.sh` runs at start and installs the Android SDK
-(`~/android-sdk`), writes `local.properties` and a Gradle mirror for Maven Central (the sandbox gets HTTP 429 from
-it). If it didn't run: `CLAUDE_CODE_REMOTE=true .claude/hooks/session-start.sh`.
-
-**Own computer:** Android Studio (any recent) opens the folder as is; or install JDK 17+ and the Android SDK
-(platform 36, build-tools 35) and put `sdk.dir=...` in `local.properties`.
+**Cloud session:** `.claude/hooks/session-start.sh` installs the Android SDK; if it didn't run:
+`CLAUDE_CODE_REMOTE=true .claude/hooks/session-start.sh`. **Own computer:** [BUILDING.md](BUILDING.md).
 
 ```bash
 export ANDROID_HOME=${ANDROID_HOME:-$HOME/android-sdk}
-./gradlew --no-daemon test lint assembleDebug assembleRelease   # everything CI runs; must pass
-./gradlew --no-daemon -q testDebugUnitTest --tests '*AccountStoreTest'   # one test class
+./gradlew --no-daemon test lint assembleDebug assembleRelease          # what CI runs; must pass
 ./gradlew --no-daemon clean assembleRelease && stat -c %s app/build/outputs/apk/release/app-release-unsigned.apk
+cd tools/page-checks && ln -sfn /opt/node-tools/node_modules node_modules && CHROMIUM_PATH=/opt/pw-browsers/chromium node run-all.mjs; rm node_modules
 ```
 
-- **APK size:** measure on a **clean** build only (an incremental build once showed a wrong, smaller figure).
-- **Lint:** every warning fails the build. Report: `app/build/reports/lint-results-debug.html`. To accept a warning,
-  add it to `app/lint.xml` **with the reason** (only if the owner would agree).
-- **Unit tests** run on the computer (no phone). Android classes are stubs there, so tested logic is plain Java.
-- **Page checks** (HTML pages in Chromium with stand-in bridges):
-  - sandbox: `cd tools/page-checks && ln -sfn /opt/node-tools/node_modules node_modules && CHROMIUM_PATH=/opt/pw-browsers/chromium node run-all.mjs; rm node_modules`
-  - own computer: `cd tools/page-checks && npm install && npx playwright install chromium && npm run check`
-  - screenshots in `tools/page-checks/screenshots/` (git-ignored): look at them after UI changes.
-- **Installing on a phone:** `app/build/outputs/apk/debug/app-debug.apk` (package `org.rafee_m.nextdnsmanager.debug`,
-  installs next to a release build), or the CI artifact `apks-<commit>`.
+APK size only from a **clean** build. Lint: every warning fails; accepted ones in `app/lint.xml` with a reason.
 
-## 5. CI
+## 5. CI and releases
 
-`.github/workflows/ci.yml` runs on every push and pull request:
-
-- job **android**: `test lint assembleDebug assembleRelease`, release size in the run summary, APKs as artifact
-  `apks-<commit>`, test/lint reports as artifact when it fails;
-- job **pages**: the page checks, screenshots as artifact.
-
-`.github/workflows/icon.yml` (**App icon**): run it by hand after editing `artwork/icon.svg` to regenerate and
-commit the icon files (it then starts CI); on a push it only checks that the files match the SVG.
-
-After a push: open the run; a red ✗ names the failing step. Also scan the log for `##[warning]` lines (keep zero).
+- **CI** (`ci.yml`, every push/PR): job `android` = the command above + APK artifact `apks-<commit>`; job `pages` = page
+  checks + screenshots. After a push, open the run; scan for `##[warning]` (keep zero).
+- **App icon** (`icon.yml`): run by hand after editing `artwork/icon.svg`.
+- **Release** (`release.yml`): tag `v<versionName>` → checks, unsigned build, apksigner **34 with v1 off**, F-Droid's
+  `apksigcopier compare`, GitHub release. Manual run = dry run. Full guide: [RELEASE.md](RELEASE.md).
 
 ## 6. Rules that must not be broken
 
-Summary of CLAUDE.md §6–7 (read those for details):
+Summary of CLAUDE.md §3–7 (read those for details):
 
 - Java only, minSdk 29, no UI libraries, **one library** (`androidx.webkit`), no analytics/crash reporting/Firebase.
-- Logic in small plain-Java classes with unit tests; `MainActivity` only wires.
-- NextDNS knowledge only in `site/Site.java`; colours only in `theme/Themes.java`.
-- Bridges only on the app's own local pages; pages send names, never URLs; validate in Java; user text via
-  `textContent`.
-- Every WebView: `Profiles.attach` first, `onRenderProcessGone` handled.
+- Logic in small plain-Java classes with unit tests; `MainActivity` only wires; NextDNS knowledge only in `site/Site.java`;
+  colours only in `theme/Themes.java`.
+- Bridges only on the app's own local pages; pages send names, never URLs; validate in Java; user text via `textContent`.
+- Every account tab: `Profiles.attach` first; every WebView: `onRenderProcessGone` handled.
 - No swipe to refresh, no text size, no back button in the top bar; theme exactly White/Black/Match system.
-- Never claim phone behaviour was tested. Commit/push/PR only when the owner asks.
+- **One commit per feature or fix**, code + tests + docs together (CLAUDE.md §4a). Commit/push/PR only when the owner asks.
+- Releases: never `-PrepoUrl`; sign only with apksigner 34, v1 off (RELEASE.md §4).
+- Never claim phone behaviour was tested; never state a website behaviour from memory: read the live site
+  (curl/Playwright), as review 2 had to correct (REVIEW.md §9.8).
 
-## 7. F-Droid considerations
+## 7. F-Droid status
 
-Not submitted yet. What is already right, and what is still to do (LLM Central's `RELEASE.md` in
-`UpperPanda1/assist` is the tested model to copy from):
-
-**Already in place**
-
-- **Free dependencies only:** `androidx.webkit` (Apache-2.0); no Google Play Services, Firebase, Sentry or other
-  proprietary/tracking code. `fdroid scanner` should find nothing (not run yet for this app).
-- **Own identity**, as F-Droid requires for forks: new name ("NextDNS Manager+"), new applicationId
-  (`org.rafee_m.nextdnsmanager`), new icon (own vector icon; no artwork of the original app).
-- **Reproducible-build settings:** `dependenciesInfo { includeInApk = false; includeInBundle = false }`; release
-  builds unsigned unless `local.properties` has signing values; the signing block has the same shape as LLM
-  Central's, whose F-Droid-cleaned tree was verified to build.
-- **Licence:** GPL-3.0 (`LICENSE`). Use `GPL-3.0-only` in the recipe: the code comes from LLM Central, which F-Droid
-  must list as GPL-3.0-only (it contains gptAssist code).
-
-**Still to do (in this order)**
-
-1. **Store texts and images** in `fastlane/metadata/android/en-US/`: `title.txt`, `short_description.txt` (≤ 80
-   characters), `full_description.txt`, `images/icon.png` (512 × 512; **already generated** from `artwork/icon.svg`), `images/phoneScreenshots/1.png …`,
-   `changelogs/<versionCode>.txt`.
-2. **Release workflow** (copy LLM Central's `release.yml`): build unsigned, sign with **`apksigner` from build-tools
-   34** (35 and Gradle's own signing fail F-Droid's `apksigcopier compare`, tested in LLM Central), publish on a `v*`
-   tag. Signing key and passwords only as GitHub secrets.
-3. **Check reproducibility:** two clean clones, Java 17 and 21 → byte-identical unsigned APKs (only
-   `META-INF/version-control-info.textproto` may differ for a working-copy build).
-4. **Run F-Droid's tools locally** (fdroidserver in a venv): `fdroid lint`, `fdroid rewritemeta`, `fdroid scanner`.
-5. **Recipe** in a fork of `gitlab.com/fdroid/fdroiddata`: `AntiFeatures: NonFreeNet` (the app depends on the
-   proprietary NextDNS service; a label, not a rejection), `License: GPL-3.0-only`, `Binaries` +
-   `AllowedAPKSigningKeys` (our key's SHA-256) so F-Droid publishes our signed APK after checking its own build
-   matches, `AutoUpdateMode`/`UpdateCheckMode: Tags`.
-6. Every release: `versionCode` + 1, `versionName`, a changelog file, a tag.
+Details: [fdroid.md](fdroid.md) (§0 = the step list). Done: free dependencies only, own id/name/icon, reproducible build
+(JDK 17 = 21), release workflow with the passing signature check, changelog 1. **Missing:** store texts, screenshots,
+name decision (trademark), release key + 4 secrets, first dry run on GitHub, `v0.1.0` tag, the recipe in a fork of
+`fdroiddata`, a run of `fdroid lint/build/scanner`. Anti-feature: `NonFreeNet`. Licence: `GPL-3.0-only`.
 
 ## 8. Open tasks
 
-1. Check the first CI and App icon runs on GitHub (Actions tab); fix anything they report.
-2. Owner's phone test (CHANGES.md checklists); fix findings.
-3. Open questions (PROJECT.md §10): PayPal pop-up payments go to the browser; data: downloads are named "NextDNS
-   download.txt"; translations.
-4. README screenshots, store texts, release workflow, F-Droid (§7).
-5. AdGuard DNS Manager: CLAUDE.md §8 and PROJECT.md §11 (product flavors; sign-in helpers from LLM Central).
+1. **Owner:** phone test (CHANGES.md checklists); name decision; release key + secrets (RELEASE.md §3); store texts and
+   screenshots; decisions A–F (REVIEW.md §7).
+2. **First GitHub run of `release.yml`:** a PR touching it, or "Run workflow" once it is on the default branch → `test`.
+3. **Code recommendations** (REVIEW.md §9.6; owner chooses): R1 wait for the sign-out deletion; R3 secure flag before a
+   window shows; R4 spread Clear cache over frames; R5 is built into `release.yml`; R6 downloads through `ExternalLinks`.
+   (R2 withdrawn.)
+4. Status icon (REVIEW.md 4.5): the dashboard's code confirms `status: ok` = in use; `mismatch` is a third answer the
+   app doesn't distinguish yet.
+5. Translations; AdGuard DNS Manager (CLAUDE.md §8, PROJECT.md §11).
 
 ## 9. Known limitations
 
-Full list: PROJECT.md §10. In short: nothing has run on a phone yet; PayPal checkout opens in the browser; English
-only; no push notifications; the "using NextDNS" test answer format comes from the original app's code (only the
-"not using" answer was seen live).
+Full list: PROJECT.md §10. In short: nothing has run on a phone; PayPal checkout opens in the browser; English only; no
+push notifications; the status test's `protocol` field (encrypted or not) has not been seen in a live answer.
 
 ## 10. Prompt for a new session
 
-Copy the box, fill in the last line, paste it as the first message of a new session:
+Short on purpose: CLAUDE.md is loaded automatically and holds the rules, so the prompt only says where to start, what
+"done" means, and the task. Copy the box, fill in the last line:
 
 ```text
-You are continuing work on NextDNS Manager+ (Android, Java, WebView) in this repository, branch
-claude/gallant-bardeen-myrq5y.
+NextDNS Manager+ (Android, Java, WebView). Work on the branch the session instructions name; the newest work is on
+claude/nextdns-manager-plus-review-el0q2u.
 
-1. READ FIRST (in this order, before anything else)
-   - handoff.md: state, where things are, how to build, open tasks.
-   - CLAUDE.md: rules, commands, hard constraints, verified facts. Follow it exactly.
-   - PROJECT.md: read the contents list, then only the sections your task needs (file map §4.3, features §5,
-     cache §6, how to change things §7).
-   - The newest entry of CHANGES.md.
-   Then confirm the baseline: ./gradlew --no-daemon test lint assembleDebug assembleRelease passes (85 tests,
-   0 lint issues) and the page checks pass (6). Report it if not, before changing anything.
+Start:
+1. Read handoff.md §1, §6, §8 and the newest CHANGES.md entry. Follow CLAUDE.md (already loaded; don't re-read it).
+   Open PROJECT.md only at the sections the task needs (§4.3 file map, §5 features, §7 how to change).
+2. Start the baseline in the background while reading: ./gradlew --no-daemon test lint assembleDebug assembleRelease
+   (expect the test count and "0 lint issues" from handoff §1; page checks too if HTML is involved). Report a
+   mismatch before changing anything.
 
-2. THINK
-   - Restate the task and what "done" means. Read the real code involved before designing.
-   - Non-trivial change: use the superpowers:brainstorming skill, then superpowers:writing-plans.
-   - Ask a short question only when a decision is truly the owner's; otherwise state your choice and reason.
-
-3. ACT
-   - Smallest correct change, existing conventions (CLAUDE.md §7): logic in small plain-Java classes with unit
-     tests, MainActivity only wires, NextDNS facts in site/Site.java, colours in theme/Themes.java, no new libraries.
-   - Comment for a beginner: say why, name the Android concept, link official docs.
-
-4. PROVE
-   - Run the full build/test/lint command and the page checks; look at the screenshots after UI changes.
-   - Add/adjust unit tests for every rule you touch; mutation-check important ones (break, see a failure, restore).
-   - Re-read the whole diff adversarially and fix what you find.
-   - Never claim something works on a phone; list what remains unverified.
-
-5. DOCUMENT
-   - CHANGES.md: new entry on top (what, why, how verified, clean-build APK size, numbered phone-test steps).
-   - PROJECT.md / CLAUDE.md: update what your change affects (file map, features, how-to, facts, TODO).
-   - Commit, push or open a PR only when I ask.
-
-6. REPORT: what was done, how it was verified, limitations, recommended next step.
+Done means:
+- The change is the smallest correct one; logic in plain-Java classes with tests (mutation-check important rules).
+- Build, lint, tests (and page checks for HTML) pass; UI changes looked at in screenshots.
+- One commit per feature/fix with its CHANGES.md entry and doc updates (CLAUDE.md §4a); push only when I ask.
+- Facts about the website or libraries come from the live site or the library source, not memory.
+- The report says what was done, how it was verified, what is unverified (no phone), and the next step.
 
 TASK: <describe the task here>
 ```

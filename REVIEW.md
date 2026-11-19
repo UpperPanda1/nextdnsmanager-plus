@@ -261,8 +261,7 @@ another on the main thread (each `new WebView` costs several ms, so ~20 accounts
 `fdroid.md` (hash, JDK 17 result, `-PrepoUrl` warning, CI facts, a submission step list, verified signing evidence),
 `gradle.properties` (comment), `PROJECT.md` (§6 quota rationale and wipe race, §7 how to change the repository
 address, §8 build settings, §9 CI runners), `CLAUDE.md` (§7 rule wording, §9 facts, §11 TODO), `CHANGES.md` (entry),
-this section. **`handoff.md` is stale** (branch `claude/gallant-bardeen-myrq5y`, APK 185,258 B, "check the first CI
-run") but is updated only when the owner asks for a handoff.
+this section. `handoff.md` was stale here and was brought up to date later the same day, at the owner's request.
 
 ### 9.8 Correction: background battery use (2026-11-19, after the owner's question)
 

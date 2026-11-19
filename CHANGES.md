@@ -4,6 +4,22 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-19 — handoff.md brought up to date, shorter start prompt
+
+**What.** `handoff.md` had the old branch, the old APK size and "check the first CI run". Now it has today's state
+(branch, build, reproducibility, CI, release workflow, open tasks, F-Droid status). The start prompt (§10) was shortened
+from ~45 to ~20 lines: it no longer repeats CLAUDE.md's rules (Claude Code loads CLAUDE.md by itself, so the old prompt
+made every session read it twice and kept two copies of the rules that had started to differ), no longer hard-codes
+numbers that change, starts the baseline build in the background, and states what "done" means, including one commit
+per feature and "facts about the website come from the live site, not memory".
+
+**Why.** Owner request: update the handoff and make the prompt efficient.
+
+**Verified.** Every number in §1 compared with this session's runs (85 tests, 0 lint issues, 6 page checks, 185,382
+bytes, hashes, CI run list). Docs only.
+
+---
+
 ## 2026-11-19 — New README with banner and badges in NextDNS blue
 
 **What.** The README was rewritten in LLM Central's style: a banner, "Get it on GitHub" button, chips (Android 10+,
