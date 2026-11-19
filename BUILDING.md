@@ -91,7 +91,7 @@ per feature or fix (`CLAUDE.md` §4a).
 | `app/src/main/assets/` | Local pages (`settings.html`, `about.html`) and scripts added to the dashboard (`js/`) |
 | `app/src/test/` | Unit tests |
 | `fastlane/metadata/` | Store texts, screenshots, changelogs (used by F-Droid and the release workflow) |
-| `artwork/` | `icon.svg` (the app icon's only source) |
+| `artwork/` | `icon.svg` (the app icon's only source); `artwork/readme/` = generated README banner and badges |
 | `tools/` | Development tools (below) |
 | `.github/workflows/` | CI (`ci.yml`), releases (`release.yml`), app icon (`icon.yml`) |
 | `gradle.properties` | `app.repoUrl`, `app.author`: shown in About, read at build time |
@@ -106,6 +106,7 @@ Optional helpers in `tools/`, each with its own `package.json` (Node.js 18+). No
 |---|---|---|
 | `tools/page-checks/` | Opens Settings, About and the injected scripts in Chromium with stand-in bridges and checks them | `npm install && npx playwright install chromium && npm run check` |
 | `tools/icon/` | Makes every launcher icon file and the store icon from `artwork/icon.svg` | `npm install && npm run generate` |
+| `tools/readme-badges/` | Rebuilds the README banner and badges (`artwork/readme/`) in NextDNS blue; run after a version change | `npm ci && npm run generate` (needs a release build first, for the APK size) |
 
 ## Reproducible builds
 

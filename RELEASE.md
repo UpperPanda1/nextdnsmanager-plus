@@ -90,7 +90,7 @@ the same dry run with a test key.)
    read them as text).
 2. Write `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` (≤ 500 characters): release notes and
    F-Droid's "What's new".
-3. `CHANGES.md` entry; README if features changed. CI green.
+3. `CHANGES.md` entry; README if features changed; run `tools/readme-badges` (version and APK size chips). CI green.
 4. Check `app.repoUrl` in `gradle.properties` is this repository's address.
 5. **Tag** `v<versionName>` exactly (e.g. `v0.1.0`) on a clean commit: on github.com, Releases → *Draft a new release* →
    "Choose a tag" → `v0.1.0` → *Publish release*; or `git tag v0.1.0 && git push origin v0.1.0`.

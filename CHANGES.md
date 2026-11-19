@@ -4,6 +4,33 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-19 — New README with banner and badges in NextDNS blue
+
+**What.** The README was rewritten in LLM Central's style: a banner, "Get it on GitHub" button, chips (Android 10+,
+WebView 119+, release, APK size, licence), "Why", features in four groups, a table **"What the app adds, and what WebView
+decides"** (which features depend on the phone's Android System WebView version, what stays the website's job, battery),
+download, privacy, build links, credits.
+
+- **`tools/readme-badges/`** (from LLM Central) draws the badges; `BRAND` is now NextDNS blue `#0056B3` (every colour is
+  derived from it), a new **WebView 119+** chip was added, and the generator now also draws the **banner** from
+  `artwork/icon.svg`, so the banner's shield can never drift from the app icon. Output: `artwork/readme/` (17 SVGs).
+- F-Droid and Obtainium buttons are prepared but commented out until the app is listed.
+
+**Why.** Owner request: badges like LLM Central's, NextDNS colours, key features and the WebView/app split highlighted.
+
+**Verified.** Every number in the README read from the code (20 accounts, 1–10 kept loaded, default 3, lock after 60 s,
+20 MB cache); three wording errors found and fixed before committing (the menu's Clear cache clears all accounts; the
+dashboard following the theme is unverified on a phone, so "asks the dashboard to match"; the status request also runs
+when the app opens). All 17 SVGs parse as XML; banner and badges rendered in Chromium on GitHub's light and dark
+backgrounds and looked at. A first banner was empty (the generator read the icon's *comment*); fixed. **Not verified:**
+how GitHub itself renders the page (it will be visible after the push).
+
+**Size.** App unchanged.
+
+**What to test:** open the repository page on GitHub in light and dark mode; the banner and chips should switch.
+
+---
+
 ## 2026-11-19 — Release workflow, RELEASE.md, BUILDING.md
 
 **What.** The app can now be released the way F-Droid wants, by pushing a tag:

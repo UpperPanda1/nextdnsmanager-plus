@@ -277,6 +277,7 @@ Other files:
 | `.github/workflows/release.yml` | Release: on a `v*` tag builds unsigned, signs with apksigner 34 (v1 off), runs F-Droid's `apksigcopier compare`, publishes; dry runs by hand or on PRs (`RELEASE.md`) |
 | `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` | Release notes / F-Droid "What's new" (≤ 500 characters; the release workflow requires it) |
 | `BUILDING.md`, `RELEASE.md`, `fdroid.md` | How to build; how to release and sign; the F-Droid submission |
+| `tools/readme-badges/` → `artwork/readme/` | README banner + badges (light/dark), NextDNS blue `#0056B3`; ported from LLM Central. Run after a version change (needs a release build for the APK size) |
 | `.claude/hooks/session-start.sh` | Sets up the Android SDK in Claude's cloud sandbox |
 
 ---
@@ -536,6 +537,10 @@ with `onclick="openSubView('xyz')"`.
 `ui/AboutWindow` → `about.html`); the build fails on a malformed value; GitHub addresses only. `-PrepoUrl=…` is for test
 builds only, **never** a release (F-Droid builds without it: `fdroid.md` §4). Also change the static mentions in
 `README.md` and the F-Droid recipe.
+
+**Change the README banner or badges:** `tools/readme-badges/generate.mjs` (`BRAND` = one hex re-colours everything;
+`WEBVIEW_FOR_ACCOUNTS`; texts of the banner in `banner()`); then `cd tools/readme-badges && npm ci && npm run generate`
+after a release build, and look at the README in light and dark. Never edit `artwork/readme/*.svg` by hand.
 
 **Change the cache cap:** `Profiles.MAX_CACHE_BYTES`. **Change the lock grace time:** `LockRules.GRACE_MS`.
 **Change the account limit:** `AccountStore.MAX_ACCOUNTS`.
