@@ -2,6 +2,17 @@ plugins {
     id 'com.android.application'
 }
 
+// Repository address and author, shown in Settings -> About. They come from gradle.properties (or -PrepoUrl=...
+// on the command line), never from the computer's git settings, so every build of the same source is identical.
+def repoUrl = String.valueOf(findProperty('repoUrl') ?: findProperty('app.repoUrl')).trim().replaceAll('/+$', '').replaceAll('\\.git$', '')
+if (!(repoUrl ==~ /https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+/)) {
+    throw new GradleException("repoUrl must look like https://github.com/<owner>/<repo>, got: " + repoUrl)
+}
+def appAuthor = String.valueOf(findProperty('app.author') ?: '').trim()
+if (!(appAuthor ==~ /[A-Za-z0-9_. -]{1,60}/)) {
+    throw new GradleException("app.author in gradle.properties is missing or has odd characters: " + appAuthor)
+}
+
 // Force Unix line endings (LF) for files generated during the build, so builds are the same on every computer.
 System.setProperty("line.separator", "\n")
 
@@ -27,6 +38,8 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         manifestPlaceholders = [appName: "@string/app_name"]
+        buildConfigField 'String', 'REPO_URL', "\"${repoUrl}\""
+        buildConfigField 'String', 'AUTHOR', "\"${appAuthor}\""
         // Only package the translations the app has (en = default "values/"). Add a locale here when a
         // values-xx folder is added.
         resourceConfigurations += ['en']

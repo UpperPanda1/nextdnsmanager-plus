@@ -248,13 +248,20 @@ public final class Profiles {
         }
     }
 
-    /** Caps a profile's HTTP cache at {@link #MAX_CACHE_BYTES} (or WebView's own default if smaller). */
+    /**
+     * Caps a profile's HTTP cache at exactly {@link #MAX_CACHE_BYTES}. A fixed number on purpose: the
+     * androidx docs say the default quota "may not be a stable size across sessions" and advise against
+     * feeding {@code getDefaultQuotaBytes()} back into {@code setQuotaBytes} (use {@code useDefaultQuota()}
+     * for "automatic"), so the old {@code min(default, cap)} could pin a moving value. WebView clamps the
+     * number to its own allowed range and saves it in the profile.
+     * Docs: https://developer.android.com/reference/androidx/webkit/HttpCache
+     */
     private static void limitCache(Profile profile) {
         if (WebViewFeature.isFeatureSupported(WebViewFeature.HTTP_CACHE_MANAGER)
                 && WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
             try {
                 HttpCache cache = profile.getHttpCache();
-                cache.setQuotaBytes(Math.min(cache.getDefaultQuotaBytes(), MAX_CACHE_BYTES));
+                cache.setQuotaBytes(MAX_CACHE_BYTES);
             } catch (RuntimeException e) {
                 Log.w(TAG, "Couldn't set the cache limit", e);
             }

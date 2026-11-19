@@ -31,7 +31,7 @@ import java.util.Set;
  */
 public final class PageZoom {
 
-    /** Preference: true = pinch zooms the page, false = pinch changes the text size (the old behaviour). */
+    /** Preference: true = pinch zooms the page, false = the page keeps its own zoom ban. */
     public static final String PREF = "pinch_zoom_page";
 
     /** What a tab currently uses, kept on the tab's WebView itself (freed together with the tab). */

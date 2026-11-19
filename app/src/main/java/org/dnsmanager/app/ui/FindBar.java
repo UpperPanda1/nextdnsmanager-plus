@@ -44,7 +44,7 @@ import org.dnsmanager.app.web.Scripts;
  * colours the matches with the theme's accent ({@link FindInPage#highlightCss}; WebView 144+, older ones keep
  * Chromium's yellow/orange). Closing the bar removes it again.</p>
  *
- * <p>One bar per screen (main screen and assistant drawer each have their own). It searches one tab: MainActivity
+ * <p>One bar per screen. It searches one tab: MainActivity
  * closes it when another account comes on screen, when the tab is unloaded and when the tab's page process dies.</p>
  */
 public final class FindBar {

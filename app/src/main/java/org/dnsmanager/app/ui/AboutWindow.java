@@ -89,12 +89,14 @@ public final class AboutWindow {
         return dialog;
     }
 
-    /** {"name", "version", "icon"}: the icon as a data: URL, or "" if it couldn't be drawn. */
+    /** {"name", "version", "repo", "author", "icon"}: the icon as a data: URL, or "" if it couldn't be drawn. */
     private static String infoJson(Activity activity) {
         JSONObject o = new JSONObject();
         try {
             o.put("name", String.valueOf(activity.getApplicationInfo().loadLabel(activity.getPackageManager())));
             o.put("version", BuildConfig.VERSION_NAME);
+            o.put("repo", BuildConfig.REPO_URL);     // chosen at build time (gradle.properties / -PrepoUrl)
+            o.put("author", BuildConfig.AUTHOR);
             o.put("icon", iconDataUrl(activity));
         } catch (Exception e) {
             Log.w(TAG, "About info incomplete", e);
@@ -102,7 +104,7 @@ public final class AboutWindow {
         return o.toString();
     }
 
-    /** Also used by IntroWindow (the same icon on the first page). */
+    /** The launcher icon as a PNG data: address. */
     static String iconDataUrl(Activity activity) {
         try {
             // On Android 8+ this is an "adaptive icon": drawing it applies the phone's icon shape.

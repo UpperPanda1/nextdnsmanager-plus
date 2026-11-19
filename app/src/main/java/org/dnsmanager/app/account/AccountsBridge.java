@@ -69,7 +69,7 @@ public final class AccountsBridge {
     public String addAccount(String name) {
         AccountStore store = host.accounts();
         if (!host.profilesSupported()) {
-            return json("Several accounts need a newer \"Android System WebView\". Update it from the Play Store.");
+            return json("Several accounts need a newer \"Android System WebView\". Update it through the app store you use.");
         }
         if (store.add(name, AccountStore.newId(), true) == null) {
             return json("Couldn't add the account.");

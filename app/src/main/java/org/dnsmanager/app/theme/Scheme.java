@@ -19,7 +19,7 @@ import java.util.Map;
  */
 public final class Scheme {
 
-    // Role names. They match tools/palettes/generate.mjs and assets/palettes.json.
+    // Role names. They match the CSS variable names (--md-primary …) in assets/*.html.
     public static final String PRIMARY = "primary";
     public static final String ON_PRIMARY = "onPrimary";
     public static final String INVERSE_PRIMARY = "inversePrimary";
@@ -35,7 +35,7 @@ public final class Scheme {
     public static final String OUTLINE = "outline";
     public static final String OUTLINE_VARIANT = "outlineVariant";
 
-    /** Every role a scheme must have, in the order of palettes.json. */
+    /** Every role a scheme must have, in a fixed order. */
     public static final String[] ROLES = {
             "primary", "onPrimary", "primaryContainer", "onPrimaryContainer", "inversePrimary",
             "secondary", "onSecondary", "secondaryContainer", "onSecondaryContainer",

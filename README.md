@@ -8,8 +8,8 @@ An Android app for the [NextDNS](https://nextdns.io) dashboard, with several acc
 - Ping test, Private DNS shortcut, downloads, desktop site, pinch to zoom
 - No ads, no analytics, no crash reporting. One library (AndroidX WebKit). About 100 KB to download.
 
-**Requirements:** Android 10 or newer. Several accounts need a recent *Android System WebView* (update it from the
-Play Store if "Add account" is missing).
+**Requirements:** Android 10 or newer. Several accounts need *Android System WebView* 119 or newer (update it through
+your app store if "Add account" is missing).
 
 Not affiliated with NextDNS.
 

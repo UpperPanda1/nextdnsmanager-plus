@@ -23,7 +23,7 @@ file only on request.
 | App | **NextDNS Manager+**: the NextDNS dashboard with several accounts, numbered account chip/menu, find in page, app lock, connection status, ping test, downloads, White/Black/Match-system theme |
 | Repository | `UpperPanda1/nextdnsmanager-plus` (GitHub fork of `doubleangels/nextdnsmanager`) |
 | Branch | `claude/gallant-bardeen-myrq5y`: an **orphan** branch. Its history starts with our first commit; nothing of the fork's history or files is in it (checked byte by byte). `main` still holds the old fork. |
-| Build | `./gradlew --no-daemon test lint assembleDebug assembleRelease` passes: **83 unit tests, 0 lint issues** |
+| Build | `./gradlew --no-daemon test lint assembleDebug assembleRelease` passes: **85 unit tests, 0 lint issues** |
 | Page checks | **6 of 6** pass |
 | Release APK | **185,258 bytes** (clean build), 98.2 KB download |
 | Phone test | **not done yet**: 20-step checklist in CHANGES.md (entry "First version") + 2 icon steps |
@@ -197,7 +197,7 @@ claude/gallant-bardeen-myrq5y.
    - PROJECT.md: read the contents list, then only the sections your task needs (file map §4.3, features §5,
      cache §6, how to change things §7).
    - The newest entry of CHANGES.md.
-   Then confirm the baseline: ./gradlew --no-daemon test lint assembleDebug assembleRelease passes (83 tests,
+   Then confirm the baseline: ./gradlew --no-daemon test lint assembleDebug assembleRelease passes (85 tests,
    0 lint issues) and the page checks pass (6). Report it if not, before changing anything.
 
 2. THINK

@@ -100,7 +100,7 @@
         .section-label { font-size: 14px; font-weight: 500; color: var(--md-primary); margin: 28px 16px 8px; }
         :focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
     </style>
-    <!-- App theme (palette / Material You / dark mode) from theme/ThemeBridge; must stay last in <head>. -->
+    <!-- App theme (light / dark) from theme/ThemeBridge; must stay last in <head>. -->
     <script>if (window.AndroidTheme) { document.write('<style id="app-theme">' + AndroidTheme.css() + '</style>'); }</script>
 </head>
 <body>
@@ -122,7 +122,7 @@
         <div class="group">
             <div class="row">
                 <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                <div class="text"><div class="title">Developed by</div><div class="sub">Rafee-M</div></div>
+                <div class="text"><div class="title">Developed by</div><div class="sub" id="author"></div></div>
             </div>
             <!-- Source code: the whole row opens the repository; Star is a second link on top of it. -->
             <div class="row link-row">
@@ -160,15 +160,10 @@
     </main>
 
     <script>
-        // The repository every GitHub link on this page points to.
-        const REPO = 'UpperPanda1/nextdnsmanager-plus';
+        // The repository address and the author are NOT written here: the app passes the ones chosen when it was
+        // built (gradle.properties), so a moved repository needs no change in this file.
         const ABOUT = window.AndroidAbout;
         function closeAbout() { if (ABOUT) ABOUT.close(); else history.back(); }
-
-        for (const link of document.querySelectorAll('[data-link]')) {
-            link.href = 'https://github.com/' + REPO + link.dataset.link;
-        }
-        document.getElementById('repoName').textContent = REPO;
 
         // Fill in what only the app knows. Everything is set with textContent / src, never as HTML.
         (function () {
@@ -176,6 +171,15 @@
             let info = {};
             try { info = JSON.parse(ABOUT.info()); } catch (e) { return; }
             if (info.name) document.getElementById('appName').textContent = info.name;
+            // Only a plain https://github.com/<owner>/<repo> address is used for links.
+            const m = /^https:\/\/github\.com\/([\w.-]+\/[\w.-]+)$/.exec(info.repo || '');
+            if (m) {
+                for (const link of document.querySelectorAll('[data-link]')) {
+                    link.href = info.repo + link.dataset.link;
+                }
+                document.getElementById('repoName').textContent = m[1];
+            }
+            if (info.author) document.getElementById('author').textContent = info.author;
             if (info.version) {
                 const v = document.getElementById('version');
                 v.textContent = 'Version ' + info.version;

@@ -3,8 +3,6 @@ package org.dnsmanager.app.ui;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
-import android.content.ActivityNotFoundException;
-import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.util.TypedValue;
@@ -26,6 +24,7 @@ import androidx.webkit.WebViewFeature;
 import org.dnsmanager.app.R;
 import org.dnsmanager.app.site.Site;
 import org.dnsmanager.app.theme.Scheme;
+import org.dnsmanager.app.web.ExternalLinks;
 
 /**
  * Three-dots menu → "Ping test": a full-screen window with two of the service's own diagnostic
@@ -125,13 +124,7 @@ public final class PingWindow {
                 if ("https".equals(uri.getScheme()) && Site.ownsHost(uri.getHost())) {
                     return false; // the service's own pages stay in the window
                 }
-                try {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                    intent.addCategory(Intent.CATEGORY_BROWSABLE);
-                    view.getContext().startActivity(intent);
-                } catch (ActivityNotFoundException | SecurityException e) {
-                    // No app for that link: ignore the tap.
-                }
+                ExternalLinks.open(view.getContext(), uri); // safe schemes only; no app = the tap is ignored
                 return true;
             }
 

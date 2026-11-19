@@ -11,7 +11,7 @@ import java.util.Set;
 
 /**
  * Everything the app knows about the DNS service it manages. <b>This is the one file to change to
- * build the app for another service</b> (the planned AdGuard DNS Manager: see CLAUDE.md §7): the rest
+ * build the app for another service</b> (the planned AdGuard DNS Manager: see CLAUDE.md §8): the rest
  * of the code asks this class instead of naming NextDNS itself.
  *
  * <p>Plain Java (no Android classes), so SiteTest checks the rules on the computer.</p>
@@ -58,7 +58,6 @@ public final class Site {
         Map<String, String> links = new LinkedHashMap<>();
         links.put("service_privacy", "https://nextdns.io/privacy");
         links.put("service_terms", "https://help.nextdns.io/terms");
-        links.put("service_help", "https://help.nextdns.io/");
         LINKS = Collections.unmodifiableMap(links);
     }
 

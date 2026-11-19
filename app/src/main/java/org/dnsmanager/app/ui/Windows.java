@@ -6,6 +6,8 @@ import android.graphics.drawable.ColorDrawable;
 import android.view.Window;
 import android.view.WindowManager;
 
+import org.dnsmanager.app.lock.AppLock;
+
 /**
  * The app's extra screens (Settings, About, Ping test) are {@link Dialog}s that fill the whole
  * screen: lighter than extra activities, and they sit on top of the page, which keeps running.
@@ -22,6 +24,23 @@ public final class Windows {
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
     }
 
+    /**
+     * The app lock's "secure" mark for ONE window: Android leaves a secure window out of screenshots,
+     * screen recordings and the recent-apps card. Every window needs it separately: Settings, About and
+     * the Ping test are their own windows, so the main screen's flag does not cover them.
+     */
+    public static void setSecure(Dialog dialog, boolean secure) {
+        Window window = dialog.getWindow();
+        if (window == null) {
+            return;
+        }
+        if (secure) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        }
+    }
+
     /** Call after {@code show()}: stretches the dialog over the screen and removes its own frame. */
     public static void fill(Dialog dialog) {
         Window window = dialog.getWindow();
@@ -29,5 +48,6 @@ public final class Windows {
             window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
             window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
+        setSecure(dialog, AppLock.isEnabled(dialog.getContext())); // same rule as the main screen
     }
 }

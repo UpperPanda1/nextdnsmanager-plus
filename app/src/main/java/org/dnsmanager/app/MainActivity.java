@@ -60,7 +60,9 @@ import org.dnsmanager.app.ui.SettingsRestore;
 import org.dnsmanager.app.ui.SettingsWindow;
 import org.dnsmanager.app.ui.SwitcherPopup;
 import org.dnsmanager.app.ui.UnloadedPlaceholder;
+import org.dnsmanager.app.ui.Windows;
 import org.dnsmanager.app.web.DesktopMode;
+import org.dnsmanager.app.web.ExternalLinks;
 import org.dnsmanager.app.web.FindInPage;
 import org.dnsmanager.app.web.PageZoom;
 import org.dnsmanager.app.web.Profiles;
@@ -603,11 +605,8 @@ public class MainActivity extends Activity {
             if ("about".equals(scheme) || "blob".equals(scheme) || "data".equals(scheme)) {
                 return false; // made by the page itself
             }
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                intent.addCategory(Intent.CATEGORY_BROWSABLE);
-                startActivity(intent);
-            } catch (ActivityNotFoundException | SecurityException e) {
+            // Only https/http/mailto/tel leave the app (web/ExternalLinks); file:, intent: etc. are dropped.
+            if (!ExternalLinks.open(MainActivity.this, uri)) {
                 Toast.makeText(MainActivity.this, R.string.no_app_for_action, Toast.LENGTH_SHORT).show();
             }
             return true;
@@ -900,15 +899,22 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * While the app lock is on, the screen is marked "secure": Android then leaves it out of
-     * screenshots and shows a blank card in the recent-apps overview, so the dashboard can't be read
-     * there without unlocking.
+     * While the app lock is on, the screen (and its extra windows, see ui/Windows.setSecure) is marked
+     * "secure": Android then leaves it out of screenshots and shows a blank card in the recent-apps
+     * overview, so the dashboard can't be read there without unlocking.
      */
     private void applySecureFlag() {
         if (AppLock.isEnabled(this)) {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         } else {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        }
+        // Settings, About and the Ping test are windows of their own. The lock is switched inside Settings,
+        // so the window that is open right now must follow the new setting at once.
+        for (Dialog dialog : new Dialog[]{settingsDialog, aboutDialog, pingDialog}) {
+            if (dialog != null && dialog.isShowing()) {
+                Windows.setSecure(dialog, AppLock.isEnabled(this));
+            }
         }
     }
 }

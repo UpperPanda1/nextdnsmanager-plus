@@ -1,7 +1,5 @@
 package org.dnsmanager.app.web;
 
-import android.content.ActivityNotFoundException;
-import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
 import android.webkit.RenderProcessGoneDetail;
@@ -35,18 +33,9 @@ public class DialogWebViewClient extends WebViewClient {
         this.onRendererGone = onRendererGone;
     }
 
-    // Android 7.0+ (API 24, our minSdk) calls this version.
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         return handleLink(view, request.getUrl());
-    }
-
-    // Older signature, kept because some WebView versions still call it. "Deprecated" means
-    // Android recommends the version above, not that it stopped working.
-    @Override
-    @SuppressWarnings("deprecation")
-    public boolean shouldOverrideUrlLoading(WebView view, String url) {
-        return handleLink(view, Uri.parse(url));
     }
 
     /**
@@ -57,16 +46,9 @@ public class DialogWebViewClient extends WebViewClient {
         if (staysInside(scheme)) {
             return false;
         }
-        if ("javascript".equals(scheme)) {
-            return true; // never run, never handed on
-        }
-        // http(s), mailto:, tel:, … → hand over to the system (browser, mail app, …).
-        try {
-            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-            intent.addCategory(Intent.CATEGORY_BROWSABLE);
-            view.getContext().startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            Log.w(TAG, "No app can open link with scheme " + scheme);
+        if (!ExternalLinks.open(view.getContext(), uri)) {
+            // javascript: is never run; other schemes are dropped (web/ExternalLinks); no app = ignored.
+            Log.w(TAG, "Link with scheme " + scheme + " was not opened");
         }
         return true; // never load outside content inside the dialog
     }

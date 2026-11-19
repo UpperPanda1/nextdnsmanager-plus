@@ -4,6 +4,37 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-19 — Review fixes, repository address read at build time, F-Droid plan
+
+**What.** A review of the whole project (`REVIEW.md`) found a few real problems; the small, certain ones are fixed here.
+The big picture, every finding and the open decisions are in `REVIEW.md`; the F-Droid plan is in `fdroid.md`.
+
+- **Repository address and author are read when the app is built** (`gradle.properties` → `BuildConfig` → About). When the
+  repository moves, change one line (or build with `-PrepoUrl=https://github.com/<owner>/<repo>`). A wrong address stops the build.
+- **Links that are not web links no longer reach other apps** (`web/ExternalLinks`): a `file:` link on a page could crash the app.
+- **App lock now also hides Settings, About and the Ping test** from screenshots and the recent-apps card (they are separate windows).
+- **Cache cap is a fixed 20 MB** instead of "the smaller of 20 MB and WebView's default" (the WebView docs advise against the latter).
+- Removed dead code (an unused link name, unused CSS), fixed comments left over from LLM Central, "Play Store" wording
+  (F-Droid users have none), WebView 119+ requirement written down (from LLM Central's docs).
+
+**Verified.** Clean runs of `test lint assembleDebug assembleRelease`: 85 tests pass (2 new), 0 lint issues; 6 of 6 page
+checks (the About check now also proves author and repository come from the app). Mutation check: allowing `file:` in
+`ExternalLinks` makes its test fail. Build override and a hostile `-PrepoUrl` value were tried. Three release builds
+(working tree + two fresh clones at different paths) gave the same SHA-256. **Not verified:** anything on a phone; JDK 17
+reproducibility; the secure flag on real windows.
+
+**Size.** Release APK 185,258 → 185,382 bytes (incremental build, measure on a clean build before quoting).
+
+**What to test on your phone**
+
+1. Settings → Security → turn App lock on. Then, with Settings open, take a screenshot: it must be blank or refused. Do the same in About and in the Ping test.
+2. With the lock on, open recent apps: the card must be blank.
+3. Settings → About: "Developed by" shows Rafee-M; "Source code on GitHub" opens the repository you expect.
+4. Settings → Data → Clear cache: the size drops, every account stays signed in.
+5. Settings looks as before (account badges, "Open" chip, dialogs; the CSS was trimmed).
+
+---
+
 ## 2026-11-15 — Icon from one SVG (App icon workflow); simpler downloads
 
 **Icon.** The icon now has one source, `artwork/icon.svg`. `tools/icon/generate.mjs` makes the launcher icon's two

@@ -106,7 +106,8 @@ How the stripping was decided: every LLM Central class was put in one of three p
   Android 10 (`BiometricPrompt` + device credential); current WebView releases are only published for Android 10+.
 - **Several accounts** need the WebView feature `MULTI_PROFILE`, which depends on the installed *Android System
   WebView* version, not on Android. Without it the app allows one account and says why (Settings → Accounts). The
-  exact first WebView version with it is **not verified** (also unverified in LLM Central).
+  first WebView version with it is **119**, and it also needs multi-process WebView (from LLM Central's docs, which
+  checked it against Chromium's tags on 2026-11-16; not re-checked here).
 - The fork's minSdk 32 had no technical reason in its code.
 
 ### 2.3 What was asked for, and where it is
@@ -219,6 +220,7 @@ Java: `app/src/main/java/org/dnsmanager/app/` (5,836 lines). Tests: `app/src/tes
 | `PageZoom.java` | Pinch to zoom (lifts the page's zoom ban at document start) | page check `zoom-viewport` |
 | `FindInPage.java` | Ctrl+F detection, highlight CSS, "3/12" text | `FindInPageTest` |
 | `DialogWebViewClient.java` | Client for the app's own pages: links to the browser, renderer death closes the window | `DialogWebViewClientTest` |
+| `ExternalLinks.java` | The one place that hands a link to another app; only https/http/mailto/tel pass (a `file:` link would crash the app) | `ExternalLinksTest` |
 | `Scripts.java` | Loads `assets/js/*.js` | `ScriptsTest` |
 | **theme/** | | |
 | `Themes.java` | The two colour schemes (all colours of the app) | `ContrastTest` |
@@ -550,7 +552,7 @@ with `onclick="openSubView('xyz')"`.
 
 | Layer | What | Command |
 |---|---|---|
-| Unit tests | 83 JUnit tests of the plain-Java rules (accounts, site, status, lock, colours/contrast, theme rebuild, downloads/data URLs, tabs LRU, start URLs, load errors, desktop mode, find, scripts, cache size, insets, badge) | `./gradlew test` |
+| Unit tests | 85 JUnit tests of the plain-Java rules (accounts, site, status, lock, colours/contrast, theme rebuild, downloads/data URLs, tabs LRU, start URLs, load errors, desktop mode, find, scripts, cache size, insets, badge) | `./gradlew test` |
 | Lint | Android lint, warnings = errors | `./gradlew lint` |
 | Builds | debug + release (R8) | `./gradlew assembleDebug assembleRelease` |
 | Page checks | 6 Chromium checks of Settings, About and the zoom script with stand-in bridges (accounts flow, options, permissions = manifest, dark colours = `Themes.java`, 360 px width, About links) | `tools/page-checks` (README) |
@@ -575,7 +577,7 @@ status bar colours, cache size). See the phone checklist in `CHANGES.md`.
 - **data: downloads** are named "NextDNS download.txt", not the page's name (WebView doesn't pass it).
 - **Translations:** English only for now (the fork had 14 languages; its texts don't fit the new screens).
 - **No push notifications** (the fork's Firebase notifications were dropped with Firebase).
-- **`MULTI_PROFILE` minimum WebView version** unknown; the app checks at runtime.
+- **`MULTI_PROFILE` minimum WebView version** 119 per LLM Central's docs (not re-checked here); the app checks at runtime.
 - **Status protocol list** `DOH, DOT, DOQ, DOH3`: the first three are from the fork; `DOH3` is an assumption.
 - **The test answer for "using NextDNS"** (`status: ok`, `protocol`) is from the fork's code; only the
   "unconfigured" answer was seen live (this sandbox doesn't use NextDNS).

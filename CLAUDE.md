@@ -21,7 +21,7 @@
    to change it) and the newest entry of **`CHANGES.md`**. Keep all four in sync with the code.
 3. The cloud sandbox is prepared by `.claude/hooks/session-start.sh` (Android SDK, Maven mirror, Gradle warm-up).
    Confirm before changing code: `./gradlew --no-daemon test lint assembleDebug assembleRelease` must pass
-   (83 tests, **0 lint issues**) and the page checks must pass (6). If the hook didn't run, see §5 "manual set-up".
+   (85 tests, **0 lint issues**) and the page checks must pass (6). If the hook didn't run, see §5 "manual set-up".
 4. Work on the branch the session instructions name. Never claim on-device behaviour was tested: there is no phone
    or emulator here.
 
@@ -180,7 +180,7 @@ tools work).
 ## 11. TODO
 
 - [x] Planning: option 2 chosen; minSdk 29 (2026-11-14).
-- [x] First version on the orphan branch: all features in PROJECT.md §2.3; 83 unit tests, 0 lint issues, 6 page
+- [x] First version on the orphan branch: all features in PROJECT.md §2.3; 85 unit tests, 0 lint issues, 6 page
       checks, CI workflow (2026-11-15).
 - [x] Own launcher icon (nothing of the fork left); first commit (2026-11-15).
 - [x] Icon generated from `artwork/icon.svg` + App icon workflow; downloads simplified; pushed (2026-11-15).
