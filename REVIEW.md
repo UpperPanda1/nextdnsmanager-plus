@@ -308,3 +308,54 @@ About and Ping have it (`cc867de`); the **status dialog** (tap on the status ico
 browser dialogs (`alert`/`confirm`/`prompt`: none in `main.7f28998e.js`; its `beforeunload` handler only cleans up),
 so WebView's own dialogs are not a gap today. Fix: give the status dialog the flag, and keep it in step when the lock
 is switched.
+
+---
+
+## 10. Review 3 (2026-11-19): adversarial pass over screens, UI and core logic
+
+Scope: the files reviews 1–2 had not read line by line. Read in full: `lock/` (LockRules, AppLock), `ui/LockScreen`,
+`site/Site`, `web/Scripts`, `web/PageZoom` + `zoom_viewport.js`, `web/DesktopMode` + `desktop_viewport.js`,
+`theme/ThemeManager`, `theme/ContentInsets`, `theme/ThemeRebuild`, `ui/SwitcherPopup`, `ui/FindBar` (logic part),
+`ui/SettingsWindow` (bridge), `status/StatusRules`, `web/WebViewRecovery`, `web/TabLru`, `web/LoadErrors`,
+`account/AccountStore` (loading, names), `downloads/DataUrl`, `ui/PingWindow` (WebView set-up), `layout/activity_main.xml`.
+Local pages: every HTML sink and bridge call in `settings.html` / `about.html` (flows are covered by the page checks).
+Facts were checked in AOSP `main` (`ViewGroup.java`, `View.java`) and androidx.webkit 1.17.1 sources where it mattered.
+
+### 10.1 Findings
+
+| # | Finding | Severity | Status |
+|---|---|---|---|
+| F1 | **App lock could be passed with TalkBack or a keyboard.** The cover is a view drawn over `mainRoot` (top bar + pages). Android hides covered views from neither accessibility services (TalkBack swipes to, and presses, every view) nor keyboard focus (Tab/arrows). So ⋮ → Settings → Sign out / Remove account, and the page itself, were reachable without unlocking; a page that already had keyboard focus kept receiving typed keys (`setDescendantFocusability` doesn't take existing focus away: AOSP `ViewGroup.setDescendantFocusability` only sets a flag; the cover button's `requestFocus` does nothing in touch mode). | medium | open → fixed in the next commit |
+| F2 | `downloads/DataUrl` saves any *well-formed* MIME type the page names (e.g. an APK type) to Downloads as "NextDNS download.bin"; MediaStore may then add the type's extension. Only a page on `*.nextdns.io` can do this. Suggest: save unknown types as `application/octet-stream`. | low | open (owner) |
+| F3 | `status/StatusRules` (= review 1, 4.5, confirmed): a Private DNS host merely *containing* "nextdns" counts as ours; the dashboard's own code shows three test answers `ok` / `mismatch` / `unconfigured`, and `mismatch` (NextDNS in use, other configuration) falls back to the Private DNS state. | low | open (needs a real "in use" sample) |
+| F4 | `zoom_viewport.js` defines `off()` that nothing calls (switching off removes the script and reloads). Harmless dead code. | nit | open |
+| F5 | Android 15+ forces edge-to-edge: the Ping window pads itself (`fitsSystemWindows`), the Settings/About HTML pages don't. LLM Central's identical dialogs showed no overlap on the owner's Android 16 phone. | unverified | phone check |
+| F6 | The account menu is `WRAP_CONTENT` wide; a 40-character name is ellipsized (single line) and the window is limited to the screen, so it should fit at 360 dp. | unverified | phone check |
+
+### 10.2 Checked and correct
+
+- **Lock rules:** locks on a fresh process and after > 60 s away; turning the lock on *and* off needs the phone's
+  unlock; Back on the cover leaves the app; Settings/About/Ping/status/menus/find bar are closed before locking; a
+  rebuilt screen doesn't reopen Settings while locked; Ctrl+F is ignored while locked.
+- **Navigation:** `Site.ownsHost` = exact host or real subdomain; a trailing dot or empty host fails closed (browser).
+  Injected scripts come only from assets and run only on `https://nextdns.io` / `https://*.nextdns.io`.
+- **Zoom + desktop scripts:** each writes the viewport only when it differs (no observer loop); the zoom script checks
+  the desktop flag on every run, so their order doesn't matter; switching reloads the tab; desktop mode keeps `; wv`
+  and restores the phone client hints.
+- **Theme and insets:** Android 11–14 frames already exclude the bars (no double padding); Android 15+ padded by the
+  listener; Android 10 keeps the default fit; hiding the status bar gives the page the cut-out strip on purpose.
+- **Account menu / find bar:** actions dismiss first; rows scroll inside half the screen; late find results after
+  closing are ignored; highlight CSS is built from hex colours only and passed through `JSONObject.quote`.
+- **Local pages:** no `innerHTML`; user text is inserted as text nodes (`el()`); the only `document.write` is the
+  theme CSS made in Java from fixed colours. Settings bridge: theme mode checked against the list, tabs clamped 1–10,
+  links by name only, the lock switch always asks for the unlock.
+- **Robustness:** all 5 WebView clients handle renderer death; recovery may attach the new WebView before
+  `setProfile` (androidx docs allow "attaching it to the view hierarchy" first); the LRU never closes the tab on screen;
+  the retry screen goes only when a new page draws without error; a malformed saved account list falls back safely;
+  `DataUrl` uses the strict Base64 decoder, a 10 MB cap and refuses bad escapes.
+
+### 10.3 Not read line by line
+
+The JavaScript flow inside `settings.html` beyond its sinks and bridge calls (covered by 5 page checks), `about.html`
+beyond the link code, purely visual classes (`NativeTheme`, `AccountBadge`, `UnloadedPlaceholder`), layout XML
+appearance, strings. Nothing ran on a phone.
