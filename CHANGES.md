@@ -4,6 +4,37 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-19 — App lock: the status dialog is hidden from screenshots too (R3)
+
+**What.** With the app lock on, the app is "secure": screenshots and screen recordings show it blank. Each dialog is a
+separate window and needs that mark itself. Settings, About and the Ping test had it; the small dialog you get by
+tapping the **status icon** did not. Now it does, and it follows at once when the lock is switched on or off.
+
+**Why — and what was dropped.** Recommendation R3 also said the mark should be set *before* a window appears, because
+"its first frames are drawn before the mark". Re-checked in Android's own source code first (REVIEW.md §9.9): that was
+**wrong**. Showing a window only schedules its first drawing for the next screen frame, and the mark is set before that.
+So that part needed no change; the only real gap was the status dialog. Pop-up menus (account menu, ⋮) were never a
+gap: they belong to the main window and inherit its mark. The dashboard opens no browser alert/confirm boxes (checked
+in its code), so those aren't a gap either. The rule "call it right after `show()`" is now written in
+`ui/Windows.setSecure`.
+
+**Verified.** `test lint assembleDebug assembleRelease`: 92 tests pass, 0 lint issues. The compiled debug app calls
+`Windows.setSecure` from `showStatusDialog` (new), `applySecureFlag` (now also covering the status dialog) and
+`Windows.fill` (checked with `dexdump`). No unit test: window flags are Android behaviour that can't run on the computer
+without an extra test library (the project allows none). **Not verified:** on a phone.
+
+**Size.** Release APK (clean build) 186,990 → **187,098 bytes** (+108 bytes).
+
+**What to test on your phone**
+
+1. Settings → turn **App lock** on.
+2. Tap the **status icon** (top bar) and take a screenshot while its dialog is open. Expected: the screenshot is black,
+   or Android says the app doesn't allow screenshots.
+3. Open the account menu (the numbered chip) and take a screenshot. Expected: also blank.
+4. Turn App lock **off**, open the status dialog again, take a screenshot. Expected: the dialog is visible now.
+
+---
+
 ## 2026-11-19 — Signing out: the account waits until its old data is really gone (R1)
 
 **What.** "Sign out" and "Remove" empty the account's container (cookies, saved site data, cache). Android does this in

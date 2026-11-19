@@ -420,6 +420,8 @@ public class MainActivity extends Activity {
                 .setPositiveButton(R.string.close, null)
                 .setNeutralButton(R.string.menu_private_dns, (d, which) -> openPrivateDnsSettings())
                 .show();
+        // A dialog is a window of its own: the main screen's "secure" mark doesn't cover it (ui/Windows.setSecure).
+        Windows.setSecure(statusDialog, AppLock.isEnabled(this));
     }
 
     // ------------------------------------------------------------ find in page
@@ -915,9 +917,9 @@ public class MainActivity extends Activity {
         } else {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
         }
-        // Settings, About and the Ping test are windows of their own. The lock is switched inside Settings,
-        // so the window that is open right now must follow the new setting at once.
-        for (Dialog dialog : new Dialog[]{settingsDialog, aboutDialog, pingDialog}) {
+        // Settings, About, the Ping test and the status dialog are windows of their own. The lock is switched
+        // inside Settings, so the windows that are open right now must follow the new setting at once.
+        for (Dialog dialog : new Dialog[]{settingsDialog, aboutDialog, pingDialog, statusDialog}) {
             if (dialog != null && dialog.isShowing()) {
                 Windows.setSecure(dialog, AppLock.isEnabled(this));
             }

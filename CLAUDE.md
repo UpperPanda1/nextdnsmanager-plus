@@ -221,7 +221,9 @@ tools work).
 - [x] First CI and App icon runs checked: failures were Playwright on Ubuntu 26.04 → jobs pinned to 24.04 by the
       owner; CI green at `cc867de` (2026-11-19).
 - [x] Review 1 fixes (`cc867de`) verified; review 2 docs, F-Droid plan corrected (REVIEW.md §9, 2026-11-19).
-- [ ] REVIEW.md §9.6 recommendations R1–R6 (owner to choose); decisions A–F in REVIEW.md §7.
+- [x] R1 (wait for the sign-out deletion, `web/WipeGate`) and R3 (status dialog secure) done 2026-11-19, 92 tests;
+      phone tests in CHANGES.md.
+- [ ] REVIEW.md §9.6 R4, R6 (owner to choose); decisions A–F in REVIEW.md §7.
 - [ ] Owner: phone test (CHANGES.md checklist).
 - [x] Release workflow + `RELEASE.md` + `BUILDING.md` (ported from LLM Central; signing needs apksigner 34 **and**
       `--v1-signing-enabled false` for this app, tested 2026-11-19). First GitHub run (dry run) still to do.

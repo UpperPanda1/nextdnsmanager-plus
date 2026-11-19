@@ -241,7 +241,7 @@ Java: `app/src/main/java/org/dnsmanager/app/` (5,836 lines). Tests: `app/src/tes
 | `LockScreen.java` | The lock cover | — |
 | `FindBar.java` | The find bar | — |
 | `UnloadedPlaceholder.java` | Black "Tap to load" / "Tap to retry" screens | — |
-| `Windows.java` | Makes a dialog full-screen | — |
+| `Windows.java` | Makes a dialog full-screen; `setSecure` = the app lock's "secure" mark for one dialog (call right after `show()`) | — |
 | **lock/** | | |
 | `AppLock.java` | Setting + Android's unlock sheet | — |
 | `LockRules.java` | When to lock (fresh start, away > 1 minute) | `LockRulesTest` |
@@ -372,7 +372,9 @@ What each tap does is in `MainActivity.switcherHost`.
 
 - **Sees:** with App lock on, opening the app shows a cover and Android's unlock sheet (fingerprint, face, or the
   phone's PIN/pattern/password). Cancel leaves the cover with an Unlock button; Back leaves the app. The app also
-  becomes "secure": blank in recent apps, no screenshots.
+  becomes "secure": blank in recent apps, no screenshots. Every dialog is its own window and gets the mark too
+  (`ui/Windows.setSecure`: Settings, About, Ping test via `Windows.fill`; the status dialog in `showStatusDialog`), and
+  `applySecureFlag` updates open dialogs when the lock is switched; pop-up menus inherit it from the main window.
 - **When** (`lock/LockRules`): at a fresh start, and after more than **1 minute** out of sight. A quick switch to
   another app doesn't ask again.
 - **Switching it on or off** needs the phone's unlock first (nobody locks themselves out; only the owner turns it

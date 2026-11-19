@@ -108,9 +108,9 @@ name decision (trademark), release key + 4 secrets, first dry run on GitHub, `v0
 1. **Owner:** phone test (CHANGES.md checklists); name decision; release key + secrets (RELEASE.md §3); store texts and
    screenshots; decisions A–F (REVIEW.md §7).
 2. **First GitHub run of `release.yml`:** a PR touching it, or "Run workflow" once it is on the default branch → `test`.
-3. **Code recommendations** (REVIEW.md §9.6; owner chooses): R1 wait for the sign-out deletion; R3 secure flag before a
-   window shows; R4 spread Clear cache over frames; R5 is built into `release.yml`; R6 downloads through `ExternalLinks`.
-   (R2 withdrawn.)
+3. **Code recommendations** (REVIEW.md §9.6; owner chooses): R1 ✅ and R3 ✅ done 2026-11-19 (phone tests in
+   CHANGES.md); open: R4 spread Clear cache over frames; R6 downloads through `ExternalLinks` (R5 is built into
+   `release.yml`; R2 withdrawn).
 4. Status icon (REVIEW.md 4.5): the dashboard's code confirms `status: ok` = in use; `mismatch` is a third answer the
    app doesn't distinguish yet.
 5. Translations; AdGuard DNS Manager (CLAUDE.md §8, PROJECT.md §11).

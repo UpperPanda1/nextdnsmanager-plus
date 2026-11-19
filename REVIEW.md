@@ -197,7 +197,7 @@ changed in review 2 (the owner asked for a review); only docs and one comment in
 | Claim (section) | Verdict | Evidence |
 |---|---|---|
 | Newest LLM Central branch is `claude/confident-brahmagupta-9iiv9x` (header) | **right** | `git ls-remote`: three branches; that one's head is 2026-11-16 15:25; `laughing-johnson-7mbk6s` stops at 2026-11-14, `master` at 2026-11-14 |
-| 4.1 secure flag on Settings/About/Ping | **right, fixed**; small gap left | `Windows.fill` runs **after** `dialog.show()`, so the first frame(s) of a dialog are drawn before `FLAG_SECURE` is set. Not covered: the status `AlertDialog`, the account `PopupWindow`/`PopupMenu` and the website's own JS `alert`/`confirm` boxes (shows account names / page text). Recommendation R3 |
+| 4.1 secure flag on Settings/About/Ping | **right, fixed**; small gap left | `Windows.fill` runs after `dialog.show()`; review 2 first thought the first frame(s) were drawn before `FLAG_SECURE` is set — **wrong** (§9.9: drawing is scheduled for the next frame, the flag is in place by then). Not covered: the status `AlertDialog`, the account `PopupWindow`/`PopupMenu` and the website's own JS `alert`/`confirm` boxes (shows account names / page text). Recommendation R3 |
 | 4.2 `ExternalLinks` safe list | **right, fixed** | the three handlers use it; test + mutation check described. Nit: `downloads/Downloads.start` still builds its own `ACTION_VIEW` (safe: http(s) only), so "the one place" in its Javadoc is not literally true |
 | 4.3 quota: docs advise against `setQuotaBytes(getDefaultQuotaBytes())` | **right** (quote verified word for word in the androidx.webkit **1.17.1 sources jar**: "If you wish to use automatic quota management, call useDefaultQuota() instead of supplying the output of getDefaultQuotaBytes()", "The default quota may not be a stable size across sessions") | the same docs: a quota "will take immediate effect, persist across restarts"; values outside WebView's range are clamped. LLM Central still has the old `min(...)` (worth back-porting there) |
 | 4.4 wipe is fire-and-forget; a race is possible | **right, and now documented by Google**: `WebStorageCompat.deleteBrowsingData` Javadoc: "Deletion is not an atomic operation, so it may also delete data that is stored during deletion" | realistic trigger is narrow (the user must close Settings and tap the account within the deletion time). Recommendation R1 |
@@ -250,7 +250,7 @@ another on the main thread (each `new WebView` costs several ms, so ~20 accounts
 |---|---|---|---|
 | R1 | ✅ **Done 2026-11-19** (§9.9): `web/WipeGate` + `Profiles.forget(account, done)` + `TabManager.show`/`loadAfterWipe`; the account waits on the "Unloaded" screen until its container is empty, then loads | ~150 lines incl. docs | low; phone test in CHANGES.md |
 | R2 | ~~pause timers on `onStop`~~ **withdrawn** (§9.8): `pauseTimers` stops JavaScript timers but not network loading, so it would also stop the dashboard's own 5-minute idle switch-off and could keep a stream open *longer* | — | — |
-| R3 | Set `FLAG_SECURE` in `Windows.prepare` (before `show()`) instead of only in `fill`; also on the status dialog | 3 lines | very low |
+| R3 | ✅ **Done 2026-11-19, re-scoped** (§9.9): "before `show()`" was unnecessary (nothing is drawn before the flag is set); the real gap was the **status dialog**, now marked secure and updated by `applySecureFlag` | 3 code lines | very low |
 | R4 | In `Profiles.clearAllCaches`, clear closed profiles one per posted message (`Handler.post` chain) instead of a tight loop | ~15 lines | low |
 | R5 | CI step: fail if `app.repoUrl` ≠ `https://github.com/${{ github.repository }}` on the main repository (skip on forks) | ~8 lines YAML | none for the APK |
 | R6 | Route `Downloads.start`'s web address through `ExternalLinks.open` | 5 lines | very low |
@@ -283,7 +283,7 @@ The same holds for debug and release APKs: this is run-time behaviour, not a bui
 Side result: the Setup page reads `status` values `ok`, `mismatch` and `unconfigured` from `test.nextdns.io`, which
 confirms `ok` = "in use" (`Site.TEST_STATUS_IN_USE`); the `protocol` field was not seen in this code.
 
-### 9.9 R1 re-checked before fixing (2026-11-19)
+### 9.9 R1 and R3 re-checked before fixing (2026-11-19)
 
 **R1 (sign-out deletion race): needed, narrow.** Re-traced: `forgetAccount` → `TabManager.unload` → `Profiles.forget`
 starts asynchronous deletions and returned at once. Two ways to open the same container during them: (1) "Sign out"
@@ -294,3 +294,17 @@ user seconds later, after the deletion, so the realistic damage is a half-delete
 it set), not a lost login. Fixed anyway because the gap is real, documented by Google, and the fix is small and
 testable. Limitation: a screen rebuilt *during* a wipe (theme change in that second) shows "Unloaded" and loads on the
 next tap instead of by itself.
+
+**R3 (secure flag before a window appears): the premise was wrong; re-scoped.** AOSP `main` (read 2026-11-19):
+`Dialog.show()` → `WindowManager.addView` → `ViewRootImpl.setView` only *schedules* the first layout and draw
+(`requestLayout` → `Choreographer.postCallback(CALLBACK_TRAVERSAL)`); the window's surface is made later in
+`relayoutWindow` during that traversal. `Windows.fill` runs in the same main-thread message right after `show()`, and
+`addFlags` → `WindowManagerGlobal.updateViewLayout` → `root.setLayoutParams` hands the flag to the same
+`ViewRootImpl` before that first traversal. So nothing is drawn unprotected; moving the call would change nothing.
+What *is* unprotected: SurfaceFlinger makes a layer secure if it or its **parent** is
+(`LayerSnapshotBuilder.cpp`: `parentSnapshot.isSecure || (requested.flags & eLayerSecure)`). The account menu and the ⋮
+menu are child windows of the main window → covered. Dialogs are separate windows → each needs the flag: Settings,
+About and Ping have it (`cc867de`); the **status dialog** (tap on the status icon) does not. The dashboard opens no
+browser dialogs (`alert`/`confirm`/`prompt`: none in `main.7f28998e.js`; its `beforeunload` handler only cleans up),
+so WebView's own dialogs are not a gap today. Fix: give the status dialog the flag, and keep it in step when the lock
+is switched.
