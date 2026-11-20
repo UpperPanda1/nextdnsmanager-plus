@@ -4,6 +4,38 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-20 — Dark mode: top bar #1C1F22
+
+**What.** In dark mode the top bar is now `#1C1F22`, a shade darker than the dashboard's own `#212529`. Android's
+status bar (and navigation bar) take the same colour, so the top of the screen stays one piece. Light mode is
+unchanged (white).
+
+**How.** The colours of the app are *roles* (`theme/Scheme`): code asks for "the background of screens"
+(`surface`), not for a hex value. The top bar used `surface`, which is also the Settings page, the menus and the find
+bar. So instead of changing `surface` (that would have darkened all of them), the schemes got one new role of the
+app's own, `topBar` (`theme/Themes`: white / `#1C1F22`). The top bar (`ui/NativeTheme`), the window and the system
+bars (`ThemeManager.styleWindow`) use it. The window matters because Android 15+ draws apps edge to edge: the status
+bar is see-through and shows the window's background. `res/values-night/colors.xml` (the colour before the code
+runs) follows.
+
+**Verified.** Tests: `ContrastTest` now also checks the account name and icons on the bar (≥ 4.5:1) and the fixed
+value; `StatusRulesTest` checks the status icon colours on the new bar (≥ 3:1). Mutation check: with the bar set to a
+light grey, 3 tests failed (`textIsReadableInBothSchemes`, `iconColoursAreReadableOnTheTopBar`,
+`theBarsMatchTheWebsite`); restored. `test lint assembleDebug assembleRelease`: 92 tests, 0 lint issues. Page checks
+6 of 6 (`common.mjs` reads the colours from `Themes.java` and now expects 33 roles).
+**Not verified:** how it looks on a phone.
+
+**Size.** Release APK 187,306 → 187,350 bytes (+44; clean builds).
+
+**What to test on your phone**
+1. Settings → Theme → Black. The top bar and the status bar above it are the same dark grey, a little darker than
+   the dashboard below.
+2. White: top bar and status bar white, as before.
+3. Match system with the phone in dark mode: like 1.
+4. Android 15 or newer: the status bar strip is the same colour as the top bar (no lighter band).
+
+---
+
 ## 2026-11-19 — CI: retry the Chromium install when Ubuntu's mirror fails
 
 **What.** CI runs 9 and 10 failed in the `pages` job, before any check ran. The app build, tests and lint (`android`

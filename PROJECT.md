@@ -116,7 +116,7 @@ How the stripping was decided: every LLM Central class was put in one of three p
 |---|---|
 | Option 2, only what is needed, NextDNS only | §2.1; [§4.3](#43-file-map) lists every file |
 | No Google/Apple login | Dropped; `site/Site.DOMAINS` = `nextdns.io` only |
-| Strip theming; status bar matches NextDNS dark | `theme/Themes.java`: two fixed schemes; dark surface `#212529` = the website's dark background ([§5.6](#56-theme-and-status-bar-colour)) |
+| Strip theming; status bar matches NextDNS dark | `theme/Themes.java`: two fixed schemes; dark surface `#212529` = the website's dark background, dark top bar `#1C1F22` ([§5.6](#56-theme-and-status-bar-colour)) |
 | Disable swipe to refresh | There is none (no `SwipeRefreshLayout`); Reload is in the account menu |
 | Account switcher: a number to tell accounts apart | `ui/AccountBadge`: round badge with the account's number, in the chip, the menu and Settings |
 | Remove text zoom completely; pinch zoom as a setting | No text-size code anywhere; Settings → Behaviour → Pinch to zoom (`web/PageZoom`) |
@@ -357,8 +357,11 @@ What each tap does is in `MainActivity.switcherHost`.
 - **Setting:** White, Black, Match system (`ThemeManager.MODE_LIGHT/DARK/SYSTEM`, key `theme_mode`).
 - **Colours:** `theme/Themes.java`. Light background white, dark background `#212529` (the NextDNS website's own dark
   background, read from its CSS), accent `#0056B3`. Top bar, window and Android's status/navigation bars all use the
-  scheme's `surface`, so the status bar always matches the page (`ThemeManager.styleWindow`). Contrast is checked by
-  `ContrastTest` (WCAG 4.5:1 for text).
+  scheme's own `topBar` role: white in light mode (same as the page), **`#1C1F22`** in dark mode, a shade darker than
+  the page (owner, 2026-11-20). So the status bar always matches the top bar (`ThemeManager.styleWindow`,
+  `NativeTheme.styleTopBar`; start-up copy in `res/values-night/colors.xml`). To change the bar alone, change
+  `topBar` in both schemes. Contrast is checked by `ContrastTest` (WCAG 4.5:1 for text) and `StatusRulesTest`
+  (3:1 for the status icon on the bar).
 - **How the website follows:** the dashboard picks light/dark with `prefers-color-scheme` unless the user chose a
   theme inside the dashboard (stored in its `localStorage` key `theme`; seen in its code). WebView answers
   `prefers-color-scheme` from the **app's theme**, so the app forces night mode on its own screen

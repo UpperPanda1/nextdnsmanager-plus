@@ -23,12 +23,12 @@ public final class NativeTheme {
         // Only static methods.
     }
 
-    /** Top bar: background = the page's background, chip slightly raised, icons in the quiet grey. */
+    /** Top bar: background = the scheme's {@code topBar}, chip slightly raised, icons in the quiet grey. */
     public static void styleTopBar(View topBar, Scheme scheme) {
         if (topBar == null) {
             return;
         }
-        topBar.setBackgroundColor(scheme.get(Scheme.SURFACE));
+        topBar.setBackgroundColor(scheme.get(Scheme.TOP_BAR));
         View chip = topBar.findViewById(R.id.accountChip);
         if (chip != null) {
             chip.setBackground(pill(scheme.get(Scheme.SURFACE_CONTAINER_HIGH), AccountBadge.dp(chip.getContext(), 20)));

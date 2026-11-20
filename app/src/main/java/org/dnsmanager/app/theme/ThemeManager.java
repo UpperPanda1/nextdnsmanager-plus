@@ -159,9 +159,9 @@ public final class ThemeManager {
     }
 
     /**
-     * Colours the window: background, status bar and navigation bar get the scheme's {@code surface}
-     * (white, or the website's dark #212529), with dark icons on a light bar and light icons on a
-     * dark one. So Android's status bar always matches the top bar and the page.
+     * Colours the window: background, status bar and navigation bar get the scheme's {@code topBar}
+     * (white, or #1C1F22 in dark mode), with dark icons on a light bar and light icons on a
+     * dark one. So Android's status bar always matches the top bar.
      *
      * <p>Android 15+ draws apps edge to edge: the bars are see-through and show the window
      * background, which is why the background is set too.</p>
@@ -169,7 +169,7 @@ public final class ThemeManager {
     @SuppressWarnings("deprecation") // status/nav bar colours: still needed below Android 15
     public static void styleWindow(Activity activity, Scheme scheme) {
         Window window = activity.getWindow();
-        int background = scheme.get(Scheme.SURFACE);
+        int background = scheme.get(Scheme.TOP_BAR);
         window.setBackgroundDrawable(new ColorDrawable(background));
         boolean lightBars = !scheme.dark;
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {

@@ -34,6 +34,11 @@ public final class Scheme {
     public static final String SURFACE_CONTAINER_HIGH = "surfaceContainerHigh";
     public static final String OUTLINE = "outline";
     public static final String OUTLINE_VARIANT = "outlineVariant";
+    /**
+     * Not a Material 3 role: this app's own. The native top bar, Android's status and navigation bars and
+     * the window behind them.
+     */
+    public static final String TOP_BAR = "topBar";
 
     /** Every role a scheme must have, in a fixed order. */
     public static final String[] ROLES = {
@@ -45,6 +50,7 @@ public final class Scheme {
             "surfaceContainerLowest", "surfaceContainerLow", "surfaceContainer",
             "surfaceContainerHigh", "surfaceContainerHighest",
             "inverseSurface", "inverseOnSurface", "outline", "outlineVariant",
+            "topBar",
     };
 
     /** true = a dark scheme (light text on dark surfaces). */

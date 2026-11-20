@@ -125,7 +125,8 @@ export function schemeCss(name) {
     const start = src.indexOf('public static final Scheme ' + name);
     const block = src.slice(start, src.indexOf('));', start));
     const roles = [...block.matchAll(/"([a-zA-Z]+)", (?:0x([0-9A-F]{8})|ACCENT)/g)];
-    if (roles.length !== 32) throw new Error('expected 32 colour roles in Themes.' + name + ', found ' + roles.length);
+    // 32 Material 3 roles plus the app's own topBar (theme/Scheme.ROLES).
+    if (roles.length !== 33) throw new Error('expected 33 colour roles in Themes.' + name + ', found ' + roles.length);
     const kebab = r => r.replace(/[A-Z]/g, c => '-' + c.toLowerCase());
     return ':root{color-scheme:' + (name === 'DARK' ? 'dark' : 'light') + ';'
         + roles.map(m => '--md-' + kebab(m[1]) + ':#' + (m[2] ? m[2].slice(2) : accent) + ';').join('') + '}';

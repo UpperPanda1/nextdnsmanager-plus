@@ -49,7 +49,7 @@ public class StatusRulesTest {
     @Test
     public void iconColoursAreReadableOnTheTopBar() {
         for (boolean dark : new boolean[]{false, true}) {
-            int bar = (dark ? Themes.DARK : Themes.LIGHT).get(Scheme.SURFACE);
+            int bar = (dark ? Themes.DARK : Themes.LIGHT).get(Scheme.TOP_BAR);
             for (StatusRules.State state : StatusRules.State.values()) {
                 double ratio = ContrastTest.ratio(StatusRules.color(state, dark), bar);
                 // 3:1 is WCAG's minimum for icons and other non-text graphics.

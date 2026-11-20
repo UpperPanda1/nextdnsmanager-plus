@@ -122,7 +122,7 @@ cd tools/page-checks && ln -sfn /opt/node-tools/node_modules node_modules && CHR
 - **No analytics, crash reporting or tracking** of any kind (owner: no Sentry).
 - **No Google/Apple sign-in code** for NextDNS (owner). It comes back only for AdGuard (§8).
 - **No swipe to refresh, no text-size feature, no back button in the top bar** (owner).
-- Theme: exactly **White, Black, Match system**; accent `#0056B3`; status bar = page background.
+- Theme: exactly **White, Black, Match system**; accent `#0056B3`; status bar = top bar colour (`topBar`: white / dark `#1C1F22`, owner 2026-11-20).
 - Everything about the DNS service in `site/Site.java`; all colours in `theme/Themes.java`; the icon only in
   `artwork/icon.svg` (`drawable/ic_launcher_*.xml` and the store icon are generated; never edit them by hand).
 - applicationId frozen after the first public release.

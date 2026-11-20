@@ -39,6 +39,8 @@ public class ContrastTest {
             {"onSecondaryContainer", "secondaryContainer"}, {"primary", "surface"},
             {"primary", "surfaceContainer"}, {"error", "surfaceContainerLow"},
             {"inverseOnSurface", "inverseSurface"}, {"onError", "error"},
+            // the top bar: account name, arrow and icons
+            {"onSurface", "topBar"}, {"onSurfaceVariant", "topBar"},
     };
 
     @Test
@@ -57,6 +59,9 @@ public class ContrastTest {
         assertEquals(0xFFFFFFFF, Themes.LIGHT.get(Scheme.SURFACE));
         assertEquals(0xFF212529, Themes.DARK.get(Scheme.SURFACE));
         assertEquals(0xFF0056B3, Themes.LIGHT.get(Scheme.PRIMARY));
+        // The top bar: white like the page in light mode, #1C1F22 in dark mode (owner, 2026-11-20).
+        assertEquals(0xFFFFFFFF, Themes.LIGHT.get(Scheme.TOP_BAR));
+        assertEquals(0xFF1C1F22, Themes.DARK.get(Scheme.TOP_BAR));
     }
 
     @Test

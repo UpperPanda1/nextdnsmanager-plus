@@ -11,9 +11,12 @@ import java.util.Map;
  * <ul>
  *   <li>the accent {@code #0056B3} (a dark NextDNS blue; white text on it is easy to read), and</li>
  *   <li>the NextDNS website's own backgrounds: white in light mode and {@code #212529} in dark mode
- *       (read from the site's CSS, {@code [data-bs-theme=dark] --bs-body-bg}). The top bar and
- *       Android's status bar use exactly these, so the bar and the page look like one piece.</li>
+ *       (read from the site's CSS, {@code [data-bs-theme=dark] --bs-body-bg}): {@code surface}.</li>
  * </ul>
+ * <p>The top bar has its own role, {@code topBar}: white in light mode (the same as the page) and
+ * {@code #1C1F22} in dark mode, a shade darker than the page, so the bar stands apart from it (owner's
+ * choice, 2026-11-20). Android's status and navigation bars use it too, so the top of the screen is
+ * one piece.</p>
  * <p>The greys are the website's own grey scale (Bootstrap's gray-100…gray-900), so native parts and
  * page match. To re-colour the app (e.g. for another DNS service), change the values below; the role
  * names are explained in {@link Scheme}. ThemesTest checks that text stays readable on its
@@ -43,7 +46,9 @@ public final class Themes {
             "surfaceContainer", 0xFFF1F3F5, "surfaceContainerHigh", 0xFFE9ECEF,
             "surfaceContainerHighest", 0xFFDEE2E6,
             "inverseSurface", 0xFF212529, "inverseOnSurface", 0xFFF1F3F5,
-            "outline", 0xFF6C757D, "outlineVariant", 0xFFCED4DA));
+            "outline", 0xFF6C757D, "outlineVariant", 0xFFCED4DA,
+            // the top bar: the same white as the page
+            "topBar", 0xFFFFFFFF));
 
     public static final Scheme DARK = new Scheme(true, roles(
             // accent (lighter blue: readable on the dark background)
@@ -64,7 +69,9 @@ public final class Themes {
             "surfaceContainer", 0xFF2B3035, "surfaceContainerHigh", 0xFF343A40,
             "surfaceContainerHighest", 0xFF3D444B,
             "inverseSurface", 0xFFDEE2E6, "inverseOnSurface", 0xFF212529,
-            "outline", 0xFF8A939B, "outlineVariant", 0xFF495057));
+            "outline", 0xFF8A939B, "outlineVariant", 0xFF495057,
+            // the top bar: a shade darker than the page's #212529
+            "topBar", 0xFF1C1F22));
 
     private Themes() {
         // Only constants.
