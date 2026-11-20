@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The manifest theme. Only one thing is added to Android's own DayNight theme: the colour of the window that
+    Android shows while the app starts, before any code has run (and, on Android 12+, the background of its
+    start-up splash, which by default uses a plain-colour windowBackground: developer.android.com, "Splash
+    screens"). top_bar_background is white, or #1C1F22 in values-night, so a phone in dark mode doesn't flash a
+    different colour before the app paints itself. Everything else is coloured in code (theme/Themes).
+-->
+<resources>
+    <style name="AppTheme" parent="@android:style/Theme.DeviceDefault.DayNight">
+        <item name="android:windowBackground">@color/top_bar_background</item>
+    </style>
+</resources>

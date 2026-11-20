@@ -66,6 +66,7 @@ import org.dnsmanager.app.web.ExternalLinks;
 import org.dnsmanager.app.web.FindInPage;
 import org.dnsmanager.app.web.PageZoom;
 import org.dnsmanager.app.web.Profiles;
+import org.dnsmanager.app.web.StartBackground;
 import org.dnsmanager.app.web.TabManager;
 
 import java.util.concurrent.Executor;
@@ -570,6 +571,7 @@ public class MainActivity extends Activity {
         }
 
         SharedPreferences prefs = Prefs.get(this);
+        StartBackground.apply(this, webView, ThemeManager.scheme(this)); // no white flash before the page draws
         PageZoom.apply(this, webView, PageZoom.isOn(prefs));
         DesktopMode.applySaved(this, prefs, webView, account);
 

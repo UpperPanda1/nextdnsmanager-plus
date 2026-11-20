@@ -36,7 +36,7 @@ public final class Scheme {
     public static final String OUTLINE_VARIANT = "outlineVariant";
     /**
      * Not a Material 3 role: this app's own. The native top bar, Android's status and navigation bars and
-     * the window behind them.
+     * the window behind them, and what a tab shows before the website has drawn (web/StartBackground).
      */
     public static final String TOP_BAR = "topBar";
 

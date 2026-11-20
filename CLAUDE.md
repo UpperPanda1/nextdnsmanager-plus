@@ -21,7 +21,7 @@
    to change it) and the newest entry of **`CHANGES.md`**. Keep all four in sync with the code.
 3. The cloud sandbox is prepared by `.claude/hooks/session-start.sh` (Android SDK, Maven mirror, Gradle warm-up).
    Confirm before changing code: `./gradlew --no-daemon test lint assembleDebug assembleRelease` must pass
-   (92 tests, **0 lint issues**) and the page checks must pass (6). If the hook didn't run, see §5 "manual set-up".
+   (94 tests, **0 lint issues**) and the page checks must pass (7). If the hook didn't run, see §5 "manual set-up".
 4. Work on the branch the session instructions name. Never claim on-device behaviour was tested: there is no phone
    or emulator here.
 
@@ -171,6 +171,10 @@ Reuse **everything** except what names or depends on NextDNS. Recommended: Gradl
   `window.location = <url from /profiles/{id}/logs/download>`. Static files: hashed names, `Cache-Control: public,
   max-age=31536000`; HTML: `max-age=0, must-revalidate` + `ETag`. The Apple configuration profile and log export
   need no login and open in the browser (owner, 2026-11-15); only the `data:` recovery codes need the app.
+- **Dashboard start-up colours** [read in `main.a1e3cbc7.js` / `main.315d6b3a.css` and measured in Chromium,
+  2026-11-20]: HTML is an empty `<div id="root">`; `body` = `var(--bs-body-bg)`, white until the code writes
+  `<html data-bs-theme>` once its data is ready (~1–1.5 s at 4× CPU throttle). `#root` content can come ~10 ms before
+  or after the attribute. At document start `document.documentElement` is still null.
 - **test.nextdns.io** answers `302` to a random subdomain (fresh DNS lookup) then JSON, e.g. `{"status":
   "unconfigured","resolver":…,"srcIP":…,"server":…}`; HEAD gives 405. `HttpURLConnection` follows the https→https
   redirect by itself. The "in use" format (`status: ok`, `protocol`) is from the fork's code, not seen live.

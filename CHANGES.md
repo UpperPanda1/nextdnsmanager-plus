@@ -4,6 +4,54 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-20 — Dark mode: no white flash while the dashboard starts
+
+**What.** In dark mode, opening the app (or an account) showed white for a moment before the dashboard appeared.
+Now that moment is `#1C1F22`, the top bar's colour.
+
+**Why it was white (two causes, both checked).**
+1. A new WebView paints **white** until the first page arrives (Android's default).
+2. The dashboard itself: its HTML is an empty shell and its CSS paints the page with `var(--bs-body-bg)`, which is
+   white until the site's code has loaded and written `<html data-bs-theme="dark">` (read in its current
+   `main.a1e3cbc7.js`). Measured in Chromium in dark mode (CPU slowed 4×, like a phone): white for 1.0–1.5 s, then
+   `#212529`.
+
+**How.** New `web/StartBackground`, called for every tab before it loads:
+- sets the WebView's background to the top bar colour (white / `#1C1F22`), and
+- in dark mode adds `assets/js/start_background.js` at **document start** (before the site's own code, only on the
+  NextDNS sites, the same way "Pinch to zoom" adds its script). It adds one CSS rule: *while `<html>` has no
+  `data-bs-theme`, the background is `#1C1F22`*. When the site picks its theme, the rule is removed and the site's
+  colours take over (if you chose "light" inside the dashboard, it turns white as before). Safety: if content shows
+  up and the site never picks a theme, the rule goes after 0.5 s, so the site's dark text is never left on a dark
+  background.
+- `res/values/themes.xml`: the window Android shows while the app starts (and the Android 12+ splash, which by
+  default uses a plain window background, per developer.android.com "Splash screens") is the same colour.
+
+**Verified.**
+- Live site in Chromium, 3 runs with the script: `#1C1F22` from the first frame until the site's `#212529`; **no white
+  frame**, also in the run where content came 11 ms before the theme (a first version without the 0.5 s grace showed
+  one white frame there; that's why the grace exists). Without the script: white for ~1 s.
+- New page check `start-background` (7 of 7 pass): dark while waiting; the site's colour after it chooses dark or
+  light; rule removed; still dark right after content; white 0.5 s later if no theme. Mutation checks: no grace →
+  fails; never removed → fails; no timeout → fails.
+- `StartBackgroundTest` (2 tests, the colour is passed as a quoted JS string). `test lint assembleDebug
+  assembleRelease`: 94 tests, 0 lint issues.
+- **Not verified:** on a phone. Known gap: app set to **Black** while the phone is in light mode — Android draws its
+  start-up window from the *phone's* setting before any app code runs, so that first moment can still be light.
+
+**Size.** Release APK 187,350 → 189,025 bytes (+1,675; clean builds).
+
+**What to test on your phone**
+1. Phone in dark mode, app on Match system or Black. Close the app fully (swipe it away), open it: no white
+   moment; dark grey, then the dashboard.
+2. Open the account menu and switch to an account that isn't loaded yet: no white moment.
+3. Settings → Theme → White: the dashboard loads as before (white).
+4. If you set "Light" inside the NextDNS dashboard's own settings while the app is dark: dark grey for a moment, then
+   the white dashboard (the site's choice wins).
+5. Phone in light mode, app on Black: tell me if you still see a light moment at start (expected, see above).
+
+---
+
 ## 2026-11-20 — Dark mode: top bar #1C1F22
 
 **What.** In dark mode the top bar is now `#1C1F22`, a shade darker than the dashboard's own `#212529`. Android's

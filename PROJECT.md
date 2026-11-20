@@ -219,6 +219,7 @@ Java: `app/src/main/java/org/dnsmanager/app/` (5,836 lines). Tests: `app/src/tes
 | `WebViewRecovery.java` | Replace/discard a WebView whose renderer died | — |
 | `DesktopMode.java` | Desktop site per account (user agent, client hints, viewport script) | `DesktopModeTest` |
 | `PageZoom.java` | Pinch to zoom (lifts the page's zoom ban at document start) | page check `zoom-viewport` |
+| `StartBackground.java` | What a tab shows before the dashboard has drawn: WebView background = `topBar`; dark mode adds `start_background.js` at document start (no white flash, [§5.6](#56-theme-and-status-bar-colour)) | `StartBackgroundTest`, page check `start-background` |
 | `FindInPage.java` | Ctrl+F detection, highlight CSS, "3/12" text | `FindInPageTest` |
 | `DialogWebViewClient.java` | Client for the app's own pages: links to the browser, renderer death closes the window | `DialogWebViewClientTest` |
 | `ExternalLinks.java` | The one place that hands a link to another app; only https/http/mailto/tel pass (a `file:` link would crash the app) | `ExternalLinksTest` |
@@ -261,7 +262,8 @@ Other files:
 |---|---|
 | `app/src/main/assets/settings.html` | The Settings screen (HTML + CSS + JS in one file) |
 | `app/src/main/assets/about.html` | The About screen |
-| `app/src/main/assets/js/zoom_viewport.js`, `desktop_viewport.js`, `find_highlight.js` | Scripts added to the dashboard |
+| `app/src/main/assets/js/zoom_viewport.js`, `desktop_viewport.js`, `find_highlight.js`, `start_background.js` | Scripts added to the dashboard |
+| `app/src/main/res/values/themes.xml` | The manifest theme `AppTheme`: Android's DayNight plus the start-up window colour (`@color/top_bar_background`) |
 | `app/src/main/assets/lib/reorder.js` | Drag-to-reorder for the account list |
 | `app/src/main/res/layout/activity_main.xml`, `top_bar.xml` | The screen and the top bar |
 | `app/src/main/res/values/strings.xml` | Texts of the native parts |
@@ -366,7 +368,14 @@ What each tap does is in `MainActivity.switcherHost`.
   theme inside the dashboard (stored in its `localStorage` key `theme`; seen in its code). WebView answers
   `prefers-color-scheme` from the **app's theme**, so the app forces night mode on its own screen
   (`ThemeManager.nightOverride` in `attachBaseContext`) and the manifest theme `Theme.DeviceDefault.DayNight`
-  follows it. Nothing is injected into the page.
+  follows it. The theme itself is never injected into the page.
+- **No white flash** (`web/StartBackground`, owner 2026-11-20): a new WebView paints white until a page arrives, and
+  the dashboard's body is white until its code has written `<html data-bs-theme>` (about 1–1.5 s, measured). So each
+  tab's WebView background is `topBar`, and in dark mode `assets/js/start_background.js` (document start) paints
+  `#1C1F22` while `<html>` has no `data-bs-theme`; it removes itself when the site picks its theme, or 0.5 s after
+  content appears without one (dark-on-dark text guard). The start-up window (`res/values/themes.xml`) has the same
+  colour. Not covered: app set to Black while the phone is light — Android draws its start-up window from the
+  phone's setting before the app runs.
 - **When the screen rebuilds** (`theme/ThemeRebuild`): the theme is fixed when the screen is built, so a change
   (Settings, or the phone switching day/night under Match system) rebuilds it, never under open Settings. The
   current account and page come back.
@@ -518,8 +527,9 @@ The generator refuses a drawing that reaches outside the safe zone or uses somet
 take (it says what). The About screen needs nothing: it draws the launcher icon.
 
 **Change a colour:** `theme/Themes.java` (both schemes), then the fallback values at the top of `settings.html` and
-`about.html` (used only outside the app), then `res/values*/colors.xml` (start-up only). Run the tests:
-`ContrastTest` fails if text gets unreadable.
+`about.html` (used only outside the app), then `res/values*/colors.xml` (start-up only), and the expected role count in
+`tools/page-checks/common.mjs` if you add or remove a role. Run the tests: `ContrastTest` fails if text gets
+unreadable. The dark colour shown before the dashboard draws is `topBar` (`web/StartBackground`).
 
 **Add a simple switch to Settings** (example: "Keep screen on"):
 

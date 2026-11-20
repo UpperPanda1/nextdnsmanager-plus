@@ -31,7 +31,10 @@ public final class Scripts {
     /** Find in page: colours the matches with the app's accent colour (ui/FindBar). */
     public static final String FIND_HIGHLIGHT = "find_highlight.js";
 
-    public static final String[] ALL = {DESKTOP_VIEWPORT, ZOOM_VIEWPORT, FIND_HIGHLIGHT};
+    /** Dark mode: the app's dark colour instead of white while the dashboard starts (web/StartBackground). */
+    public static final String START_BACKGROUND = "start_background.js";
+
+    public static final String[] ALL = {DESKTOP_VIEWPORT, ZOOM_VIEWPORT, FIND_HIGHLIGHT, START_BACKGROUND};
 
     static final String ASSET_DIR = "js/";
 
