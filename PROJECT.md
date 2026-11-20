@@ -233,6 +233,7 @@ Java: `app/src/main/java/org/dnsmanager/app/` (5,836 lines). Tests: `app/src/tes
 | `ContentInsets.java` | Padding rule with/without the status bar | `ContentInsetsTest` |
 | **ui/** | | |
 | `SwitcherPopup.java` | The account menu | — (view code) |
+| `StatusLegend.java` | The status dialog's icon legend (icon in the top bar's colour + text per state) | `StatusRulesTest` (order, icon shape) |
 | `AccountBadge.java` | Numbered badge | `AccountBadgeTest` |
 | `NativeTheme.java` | Colours top bar, toggles, loading bar | — |
 | `SettingsWindow.java` | Opens Settings, `AndroidSettings` bridge, Back handling | page checks `settings-*` |
@@ -412,7 +413,13 @@ What each tap does is in `MainActivity.switcherHost`.
   `test.nextdns.io` (it redirects to a random subdomain to force a fresh DNS lookup and answers JSON). A positive test
   answer wins, so router/VPN set-ups show correctly. Runs only while the app is visible; a newer network change
   discards an older answer.
-- **Tap** = explanation + "Private DNS settings" button.
+- **How often:** no timer. One test each time the app comes to the front (`onStart`: Android reports the current
+  network at once) and one per change of the phone's default network or its Private DNS setting, 400 ms after a burst
+  of changes settles. Each test is one small HTTPS request (`TIMEOUT_MS` 6 s, answer ≤ 16 KB). Nothing in the
+  background (`onStop` unregisters).
+- **Tap** = the sentence for the current state, then a legend: the same four icons in the top bar's colours, one row
+  each with a short text (`ui/StatusLegend`, order `StatusRules.LEGEND`; icon shape `StatusRules.usesTickIcon`, used by
+  the top bar too), and the "Private DNS settings" button.
 
 ### 5.9 Find in page
 

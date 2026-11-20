@@ -57,4 +57,19 @@ public class StatusRulesTest {
             }
         }
     }
+
+    @Test
+    public void theLegendNamesEveryStateOnceBestFirst() {
+        assertEquals(StatusRules.State.values().length, StatusRules.LEGEND.length);
+        assertEquals(java.util.EnumSet.allOf(StatusRules.State.class),
+                java.util.EnumSet.copyOf(java.util.Arrays.asList(StatusRules.LEGEND)));
+        assertEquals(StatusRules.State.SECURE, StatusRules.LEGEND[0]);
+    }
+
+    @Test
+    public void onlySecureGetsTheTick() {
+        for (StatusRules.State state : StatusRules.State.values()) {
+            assertEquals(state.name(), state == StatusRules.State.SECURE, StatusRules.usesTickIcon(state));
+        }
+    }
 }

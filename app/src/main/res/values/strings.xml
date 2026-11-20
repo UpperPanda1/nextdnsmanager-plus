@@ -54,7 +54,11 @@
     <string name="status_insecure">This phone uses %1$s, but the connection is not encrypted.</string>
     <string name="status_other_dns">Private DNS is on, but it points to another DNS service, not %1$s.</string>
     <string name="status_not_protected">This phone is not using %1$s.</string>
-    <string name="status_hint">Green = encrypted %1$s. Orange = %1$s without encryption. Yellow = another private DNS. Red = not protected.</string>
+    <!-- The status dialog's explanation: one line per icon (ui/StatusLegend), best first. -->
+    <string name="status_legend_secure">%1$s, encrypted</string>
+    <string name="status_legend_insecure">%1$s, not encrypted</string>
+    <string name="status_legend_other_dns">Another private DNS service</string>
+    <string name="status_legend_not_protected">Not protected</string>
     <string name="close">Close</string>
 
     <!-- Ping test window -->

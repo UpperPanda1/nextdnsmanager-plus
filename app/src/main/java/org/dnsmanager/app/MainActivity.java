@@ -31,6 +31,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
@@ -58,6 +59,7 @@ import org.dnsmanager.app.ui.NativeTheme;
 import org.dnsmanager.app.ui.PingWindow;
 import org.dnsmanager.app.ui.SettingsRestore;
 import org.dnsmanager.app.ui.SettingsWindow;
+import org.dnsmanager.app.ui.StatusLegend;
 import org.dnsmanager.app.ui.SwitcherPopup;
 import org.dnsmanager.app.ui.UnloadedPlaceholder;
 import org.dnsmanager.app.ui.Windows;
@@ -416,12 +418,17 @@ public class MainActivity extends Activity {
         if (statusDialog != null && statusDialog.isShowing()) {
             return;
         }
-        statusDialog = new AlertDialog.Builder(this)
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        // Under the sentence: what each icon means, with the icons themselves (ui/StatusLegend).
+        LinearLayout legend = StatusLegend.create(builder.getContext(), ThemeManager.scheme(this).dark);
+        statusDialog = builder
                 .setTitle(R.string.status_title)
-                .setMessage(connectionStatus.description() + "\n\n" + getString(R.string.status_hint, Site.NAME))
+                .setMessage(connectionStatus.description())
+                .setView(StatusLegend.scrollable(legend))
                 .setPositiveButton(R.string.close, null)
                 .setNeutralButton(R.string.menu_private_dns, (d, which) -> openPrivateDnsSettings())
                 .show();
+        StatusLegend.matchMessage(legend, statusDialog.findViewById(android.R.id.message));
         // A dialog is a window of its own: the main screen's "secure" mark doesn't cover it (ui/Windows.setSecure).
         Windows.setSecure(statusDialog, AppLock.isEnabled(this));
     }

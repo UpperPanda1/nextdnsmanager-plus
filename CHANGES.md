@@ -4,6 +4,45 @@ Newest first. Each entry: what changed, why, how it was verified, sizes, and wha
 
 ---
 
+## 2026-11-20 — Status dialog: the icons themselves instead of "Green = …"
+
+**What.** Tapping the status icon used to end with one long sentence: "Green = encrypted NextDNS. Orange = NextDNS
+without encryption. Yellow = another private DNS. Red = not protected." Now, under the sentence for the current
+state, there are four even rows, each with the **same icon in the same colour as in the top bar** and a short text:
+
+| Icon | Text |
+|---|---|
+| green shield ✓ | NextDNS, encrypted |
+| orange ⚠ | NextDNS, not encrypted |
+| yellow ⚠ | Another private DNS service |
+| red ⚠ | Not protected |
+
+**How.** New `ui/StatusLegend` builds the rows like the account menu's rows (`ui/SwitcherPopup`: icon, 14 dp gap,
+text) and is put into the dialog with `AlertDialog.Builder.setView`. The text copies the colour and size of the
+dialog's own message, and the sides use the dialog's own padding, so the rows line up with the sentence above.
+`StatusRules` got the legend order (`LEGEND`) and which icon a state uses (`usesTickIcon`), which the top bar now
+uses too, so the two can't disagree. The icons are hidden from TalkBack: the texts say everything. The old string
+`status_hint` was removed. The rows sit in a scroll view: Android's dialog scrolls only its own message, so on a
+small screen with a big font the last rows could otherwise be cut off (found by the second agent's check).
+
+**Verified.** 2 new tests in `StatusRulesTest` (every state once, best first; only "encrypted" gets the tick).
+Mutation check: tick for every state but "not protected" → `onlySecureGetsTheTick` failed; restored.
+`test lint assembleDebug assembleRelease`: 96 tests, 0 lint issues. Checked by a second agent against the account
+menu's row code (see the report). **Not verified:** how the dialog looks — native dialogs can't be rendered without
+a phone or emulator, so there is no screenshot.
+
+**Size.** Release APK 189,025 → 190,513 bytes (+1,488; clean builds).
+
+**What to test on your phone**
+1. Tap the status icon in the top bar. Under the sentence: four rows, icons in a straight column, texts starting at
+   the same line, in the same colours as the top bar icon (green, orange, yellow, red).
+2. The sentence's text and the rows' text look the same size and colour.
+3. Theme Black and White: the icon colours match the top bar icon in each.
+4. TalkBack on: the rows read "NextDNS, encrypted" etc., without "image".
+5. Biggest font size (phone settings): long texts wrap onto a second line, the icon stays beside them.
+
+---
+
 ## 2026-11-20 — Dark mode: no white flash while the dashboard starts
 
 **What.** In dark mode, opening the app (or an account) showed white for a moment before the dashboard appeared.

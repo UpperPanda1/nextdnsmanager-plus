@@ -163,7 +163,7 @@ public final class ConnectionStatus {
     }
 
     private void show() {
-        icon.setImageResource(state == StatusRules.State.SECURE
+        icon.setImageResource(state != null && StatusRules.usesTickIcon(state)
                 ? R.drawable.ic_status_ok : R.drawable.ic_status_warn);
         // Nothing known yet (the first moment after start): the quiet grey of the other icons, not red.
         int color = state != null ? StatusRules.color(state, darkTheme)

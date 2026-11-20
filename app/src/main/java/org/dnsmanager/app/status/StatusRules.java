@@ -34,8 +34,19 @@ public final class StatusRules {
         NOT_PROTECTED
     }
 
+    /** The order of the explanation in the status dialog (ui/StatusLegend): best first, every state once. */
+    public static final State[] LEGEND = {State.SECURE, State.INSECURE, State.OTHER_DNS, State.NOT_PROTECTED};
+
     private StatusRules() {
         // Only static methods.
+    }
+
+    /**
+     * @return true if the state gets the shield with a tick, false for the warning sign. The top bar
+     *         (ConnectionStatus) and the dialog's explanation (ui/StatusLegend) both ask here, so they always agree.
+     */
+    public static boolean usesTickIcon(State state) {
+        return state == State.SECURE;
     }
 
     /**
